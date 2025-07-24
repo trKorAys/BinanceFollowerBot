@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UTC to Local Time Demo</title>
+</head>
+<body>
+    <div id="utc"></div>
+    <div id="local"></div>
+    <script>
+        const utcTime = '2023-01-01T12:00:00Z';
+        document.getElementById('utc').textContent = 'UTC time: ' + utcTime;
+        document.getElementById('local').textContent = 'Local time: ' + new Date(utcTime).toLocaleString();
+    </script>
+</body>
+</html>
