@@ -61,6 +61,9 @@ The main variables in `.env` are:
 - `BALANCE_DB_PATH` is the SQLite file for end-of-day reports. Default is `balances.db`.
  - `BUY_DB_PATH` stores the most recent buy and sell times in SQLite. Default is `buy.db`.
 - Symbols stored here are checked before each cycle and any older than two hours are removed.
+- `STOP_LOSS_ENABLED` enables ATR-based stop losses when set to `true`.
+- `ATR_PERIOD` controls how many candles are used for ATR.
+- `STOP_LOSS_MULTIPLIER` multiplies the ATR value to set the stop level.
 
 ### Language Selection
 
