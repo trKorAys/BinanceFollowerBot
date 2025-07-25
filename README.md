@@ -182,6 +182,8 @@ To run the bot on Windows without installing dependencies you can generate stand
    exe could fail with `dateparser_tz_cache.pkl` errors.
    Entry scripts now adjust `sys.path` when run directly so exes work without
    import errors.
+   Frozen exe'ler için `sys.frozen` kontrolü eklenerek modül yolu otomatik
+   ayarlanır, böylece `bot` paketine ait içe aktarmalar hatasız çalışır.
 
 ## Running Tests
 
