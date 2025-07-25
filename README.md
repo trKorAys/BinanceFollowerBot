@@ -200,6 +200,21 @@ The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setti
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 
+### Çeviri Dosyaları
+
+`bot/messages/messages_[ar|fr|ja|ko|ru|zh].py` dosyalarındaki `/balances` mesajı tek satıra indirildi:
+
+```python
+'balances': 'Balance Symbols:\n{symbols}',
+```
+
+Her dosyanın sorunsuz içe aktarılabildiğini doğrulamak için aşağıdaki komut kullanılabilir:
+
+```bash
+python -m bot.messages.messages_fr
+```
+Benzer şekilde diğer diller de aynı komutla kontrol edilebilir.
+
 ## Support
 
 For donations our USDT address is: `THz1ssvnpVcmt9Kk24x4wD5XCMZBtnubnE`
