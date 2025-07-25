@@ -1,4 +1,10 @@
 import os
+import sys
+from pathlib import Path
+
+if __name__ == "__main__" and __package__ is None:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    __package__ = "bot"
 
 # Testnet botu çalışırken ortam değişkeni daima true olmalı
 os.environ["BINANCE_TESTNET"] = "true"

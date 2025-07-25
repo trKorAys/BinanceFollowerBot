@@ -1,4 +1,10 @@
 import os
+import sys
+from pathlib import Path
+
+if __name__ == "__main__" and __package__ is None:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    __package__ = "bot"
 
 # Bu dosya çalıştırıldığında ortam zorla mainnete ayarlanır
 os.environ["BINANCE_TESTNET"] = "false"

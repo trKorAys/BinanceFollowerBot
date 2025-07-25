@@ -180,6 +180,8 @@ To run the bot on Windows without installing dependencies you can generate stand
    The build script now calls PyInstaller with `--collect-all dateparser` so the
    required time zone cache is packaged automatically. Without this option the
    exe could fail with `dateparser_tz_cache.pkl` errors.
+   Entry scripts now adjust `sys.path` when run directly so exes work without
+   import errors.
 
 ## Running Tests
 
