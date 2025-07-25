@@ -38,6 +38,10 @@ A Python-based bot that monitors your Binance account and automatically sells wh
    pip install -r requirements.txt
    ```
    The bot will still run if `ta-lib` is missing; the SMA calculation will fall back to the internal method.
+   If `pip install ta-lib` fails, download the appropriate `.whl` file from [here](https://github.com/cgohlke/talib-build/releases) and install it manually:
+   ```bash
+   pip install TA_Lib‑<version>.whl
+   ```
 4. Copy the `.env.example` file from the repository to define environment variables:
    ```bash
    cp .env.example .env
@@ -185,10 +189,13 @@ The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setti
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 
-### Son Değişiklikler
+## Changes
 
-- Telegram API hataları artık sadece genel bir mesaj olarak kaydediliyor.
-- Saatler her zaman UTC‑0 saklanıyor, tarayıcı tarafında otomatik olarak yerel saat dilimine çevriliyor.
+- Added instructions for manually installing the `ta-lib` `.whl` package when the regular pip command fails.
+
+## Planned Features
+
+- Build a simple web interface that displays backend UTC‑0 timestamps in the browser's local time zone.
 
 ## Support
 
