@@ -1,7 +1,21 @@
 import os
 import asyncio
 from threading import Thread
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler as _CommandHandler
+
+
+def _cmd(command, callback):
+    """Create CommandHandler with backward compatible .commands attribute."""
+    handler = _CommandHandler(command, callback)
+    if not hasattr(handler, "commands"):
+        # python-telegram-bot < 20 only exposes `.command`
+        cmd_attr = getattr(handler, "command", [])
+        if isinstance(cmd_attr, (list, tuple, set)):
+            cmd_list = list(cmd_attr)
+        else:
+            cmd_list = [cmd_attr]
+        handler.commands = cmd_list
+    return handler
 
 from .sell_bot import send_telegram
 from .utils import log
@@ -227,16 +241,16 @@ def start_listener(loop: asyncio.AbstractEventLoop, sell_bot=None, buy_bot=None)
                 reason = getattr(buy_bot, "last_skip_reason", "")
                 send_telegram(t("buy_skipped", reason=reason), chat_id=chat_id)
 
-    dispatcher.add_handler(CommandHandler("start", cmd_start))
-    dispatcher.add_handler(CommandHandler("help", cmd_help))
-    dispatcher.add_handler(CommandHandler("summary", cmd_summary))
-    dispatcher.add_handler(CommandHandler("report", cmd_report))
-    dispatcher.add_handler(CommandHandler("balances", cmd_balances))
-    dispatcher.add_handler(CommandHandler("positions", cmd_positions))
-    dispatcher.add_handler(CommandHandler("price", cmd_price))
-    dispatcher.add_handler(CommandHandler("free", cmd_free))
-    dispatcher.add_handler(CommandHandler("buy", cmd_buy))
-    dispatcher.add_handler(CommandHandler("sell", cmd_sell))
+    dispatcher.add_handler(_cmd("start", cmd_start))
+    dispatcher.add_handler(_cmd("help", cmd_help))
+    dispatcher.add_handler(_cmd("summary", cmd_summary))
+    dispatcher.add_handler(_cmd("report", cmd_report))
+    dispatcher.add_handler(_cmd("balances", cmd_balances))
+    dispatcher.add_handler(_cmd("positions", cmd_positions))
+    dispatcher.add_handler(_cmd("price", cmd_price))
+    dispatcher.add_handler(_cmd("free", cmd_free))
+    dispatcher.add_handler(_cmd("buy", cmd_buy))
+    dispatcher.add_handler(_cmd("sell", cmd_sell))
 
     try:
         updater.start_polling()

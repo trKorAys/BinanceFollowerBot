@@ -18,6 +18,8 @@ BASE_CMD = [
     "--clean",
     "--collect-all",
     "dateparser",
+    "--hidden-import",
+    "imghdr",
     "--name",
 ]
 
