@@ -4,7 +4,6 @@ from datetime import datetime, timezone, timedelta
 import sqlite3
 import time
 import numpy as np
-from dotenv import load_dotenv
 import requests
 from typing import Optional
 
@@ -21,10 +20,11 @@ from .utils import (
     log,
     floor_to_precision,
     seconds_until_next_six_hour,
+    load_env,
 )
 from .messages import t
 
-load_dotenv()
+load_env()
 
 TESTNET = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
 API_KEY = (

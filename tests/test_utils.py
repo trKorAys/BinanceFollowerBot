@@ -131,3 +131,14 @@ def test_log_uses_env_timezone(monkeypatch):
     utils.log('Test')
     assert logs
     assert logs[0].startswith('[2023-01-01T15:00:00+0300] Test')
+
+
+def test_load_env_warning(monkeypatch):
+    import bot.utils as utils
+    monkeypatch.setattr(utils.os.path, 'exists', lambda p: False)
+    records = []
+    monkeypatch.setattr(utils, 'load_dotenv', lambda *a, **k: records.append('loaded'))
+    monkeypatch.setattr(utils, 'print', lambda m: records.append(m))
+    utils.load_env()
+    assert any('Uyarı' in r for r in records)
+    assert 'loaded' in records
