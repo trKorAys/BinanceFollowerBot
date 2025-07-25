@@ -9,7 +9,17 @@ except Exception:  # pragma: no cover - optional on headless systems
     tk = None
     messagebox = None
 
-BASE_CMD = ["pyinstaller", "--onefile", "--clean", "--name"]
+# `dateparser` kitaplığının zaman dilimi verileri otomatik olarak paketlenmedik
+# için PyInstaller çalıştırırken bu verileri de dahil ediyoruz. Böylece exe
+# dosyası çalıştırıldığında `dateparser_tz_cache.pkl` hatası alınmıyor.
+BASE_CMD = [
+    "pyinstaller",
+    "--onefile",
+    "--clean",
+    "--collect-all",
+    "dateparser",
+    "--name",
+]
 
 
 def build(target: Path, name: str, status_cb=None) -> None:
