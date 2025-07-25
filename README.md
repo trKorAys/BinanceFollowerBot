@@ -181,10 +181,14 @@ To run the bot on Windows without installing dependencies you can generate stand
    Entry scripts now adjust `sys.path` when run directly so exes work without
    import errors. Frozen exe'ler için `sys.frozen` kontrolü eklenerek ve
    `sys._MEIPASS` dizini kullanılarak modül yolu otomatik ayarlanır, böylece
-   `bot` paketine ait içe aktarmalar hatasız çalışır. Böylece oluşturulan exe
-   çalıştırıldığında `ModuleNotFoundError: No module named 'bot'` hatası
-   görülmez. Paket adının boş string olması da kontrol edilerek PyInstaller
-   ile oluşturulan exe'lerin her ortamda sorunsuz başlaması sağlandı.
+  `bot` paketine ait içe aktarmalar hatasız çalışır. Böylece oluşturulan exe
+  çalıştırıldığında `ModuleNotFoundError: No module named 'bot'` hatası
+  görülmez. Paket adının boş string olması da kontrol edilerek PyInstaller
+  ile oluşturulan exe'lerin her ortamda sorunsuz başlaması sağlandı.
+  Ayrıca PyInstaller derlemesinde tüm modüllerin paketlenebilmesi için
+  `mainnet_bot.py` ve `testnet_bot.py` dosyalarındaki içe aktarmalar mutlak
+  hale getirildi. Bu sayede `bot` paketindeki kodlar eksiksiz şekilde
+  arşive eklenir.
 
 ## Running Tests
 

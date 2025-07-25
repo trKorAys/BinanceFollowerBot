@@ -21,10 +21,10 @@ load_dotenv()
 import asyncio
 from binance import AsyncClient
 
-from .buy_bot import BuyBot
-from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from .telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
-from .utils import log, setup_telegram_menu  # noqa: F401 - testler için içe aktarılıyor
+from bot.buy_bot import BuyBot
+from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from bot.telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
+from bot.utils import log, setup_telegram_menu  # noqa: F401 - testler için içe aktarılıyor
 
 API_KEY = os.getenv("BINANCE_TESTNET_API_KEY")
 API_SECRET = os.getenv("BINANCE_TESTNET_API_SECRET")

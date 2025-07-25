@@ -20,10 +20,10 @@ load_dotenv()
 import asyncio
 from binance import AsyncClient
 
-from .buy_bot import BuyBot
-from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from .telegram_listener import start_listener
-from .utils import log, setup_telegram_menu
+from bot.buy_bot import BuyBot
+from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from bot.telegram_listener import start_listener
+from bot.utils import log, setup_telegram_menu
 
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
