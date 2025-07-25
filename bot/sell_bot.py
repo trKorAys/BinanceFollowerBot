@@ -4,7 +4,6 @@ import os
 import time
 import math
 import sqlite3
-from dotenv import load_dotenv
 from .utils import (
     FifoTracker,
     get_current_utc_iso,
@@ -14,6 +13,7 @@ from .utils import (
     extract_min_notional,
     floor_to_step,
     seconds_until_next_midnight,
+    load_env,
 )
 from dataclasses import dataclass, field
 from typing import Dict, Optional
@@ -23,7 +23,7 @@ import requests
 from binance.exceptions import BinanceAPIException
 from .messages import t
 
-load_dotenv()
+load_env()
 
 TESTNET = os.getenv("BINANCE_TESTNET", "false").lower() == "true"
 API_KEY = (

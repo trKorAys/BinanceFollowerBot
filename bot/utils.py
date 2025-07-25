@@ -3,7 +3,16 @@ from typing import Optional
 import os
 import requests
 from builtins import print as builtin_print
+from dotenv import load_dotenv
+
 print = builtin_print  # testlerde kolayca yamanabilmesi icin
+
+
+def load_env(dotenv_path: str = ".env") -> None:
+    """.env dosyası yoksa uyarıp değişkenleri yükle."""
+    if not os.path.exists(dotenv_path):
+        print("Uyarı: .env dosyası bulunamadı, ortam değişkenleri kullanılacak.")
+    load_dotenv(dotenv_path)
 try:
     from zoneinfo import ZoneInfo  # Python 3.9+
 except ImportError:  # pragma: no cover - geri uyumluluk

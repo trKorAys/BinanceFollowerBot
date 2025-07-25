@@ -16,6 +16,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - During the buy scan only the top `TOP_SYMBOLS_COUNT` symbols by USDT volume are considered and this list is automatically refreshed at 00, 06, 12 and 18 UTC‑0. Set `TOP_SYMBOLS_COUNT` in `.env` to change the default of 150.
 - Positions worth less than **5 USDT** are ignored.
 - Logs specify which buying strategy was attempted each time.
+- Warns if `.env` is missing and falls back to system environment variables.
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
@@ -47,6 +48,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
    cp .env.example .env
    ```
    Fill in the fields with your own information. You can store your API keys, Telegram token and other settings here.
+   If `.env` is missing at startup the bot warns and reads values from existing environment variables.
 5. Create a new bot via `@BotFather` on Telegram and place the token in `TELEGRAM_TOKEN`. Add the bot to your chat group and after sending `/start`, record the `chat -> id` value from `https://api.telegram.org/botTOKEN/getUpdates` as `TELEGRAM_CHAT_ID`.
    When you run the `mainnet` or `testnet` bot the Telegram menu will automatically display `/start`, `/summary` and `/help`. These commands are now handled by a listener. `/summary` shows your current total balance while `/help` lists all commands.
 
