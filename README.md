@@ -17,6 +17,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Positions worth less than **5 USDT** are ignored.
 - Logs specify which buying strategy was attempted each time.
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
+- Frontend tarafı, cihazın zaman dilimine göre saatleri otomatik dönüştürür.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
 - Target prices are printed whenever updated and instantaneous targets are shown on price changes.
@@ -175,9 +176,11 @@ To run the bot on Windows without installing dependencies you can generate stand
    python build_exe.py
    ```
    A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. It also works on systems without a command line. Move the files created under `dist/` together with `.env` to any folder you like.
-   The build script now calls PyInstaller with `--collect-all dateparser` so the
-   required time zone cache is packaged automatically. Without this option the
-   exe could fail with `dateparser_tz_cache.pkl` errors.
+  The build script now calls PyInstaller with `--collect-all dateparser` and
+  adds `imghdr` as a hidden import so the required time zone cache and image
+  type detection module are packaged automatically. Without these options the
+  exe could fail with `dateparser_tz_cache.pkl` or `ModuleNotFoundError:
+  imghdr` errors.
    Entry scripts now adjust `sys.path` when run directly so exes work without
    import errors. Frozen exe'ler için `sys.frozen` kontrolü eklenerek ve
    `sys._MEIPASS` dizini kullanılarak modül yolu otomatik ayarlanır, böylece
@@ -215,6 +218,12 @@ Her dosyanın sorunsuz içe aktarılabildiğini doğrulamak için aşağıdaki k
 python -m bot.messages.messages_fr
 ```
 Benzer şekilde diğer diller de aynı komutla kontrol edilebilir.
+
+### Planlananlar
+
+- PyInstaller derlemelerinde Python 3.13 desteği için `imghdr` modülü projenin
+  içine eklendi. İleride standart kütüphaneden kaldırılan diğer modüller
+  de aynı şekilde paketlenerek eski kodların sorunsuz çalışması sağlanacak.
 
 ## Support
 
