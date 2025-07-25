@@ -179,6 +179,10 @@ To run the bot on Windows without installing dependencies you can generate stand
    ```bash
    python build_exe.py
    ```
+   veya
+   ```bash
+   py -3 build_exe.py
+   ```
    A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. Time zone cache data from `dateparser` is bundled automatically so the generated executables run without errors. Move the files created under `dist/` together with `.env` to any folder you like.
 
 ## Running Tests
@@ -191,11 +195,6 @@ The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setti
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 
-## Changes
-
-- Added instructions for manually installing the `ta-lib` `.whl` package when the regular pip command fails.
-- The Windows build script now includes the `dateparser_tz_cache.pkl` file so
-  executables no longer crash with a missing file error.
 
 ## Planned Features
 

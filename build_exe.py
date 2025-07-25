@@ -18,7 +18,6 @@ BASE_CMD = [
     "pyinstaller",
     "--onefile",
     "--clean",
-    "--name",
     "--add-data",
     ADD_DATA_ARG,
 ]
@@ -26,7 +25,7 @@ BASE_CMD = [
 
 def build(target: Path, name: str, status_cb=None) -> None:
     """PyInstaller'i çağırarak tek dosyalık exe üret."""
-    cmd = BASE_CMD + [name, str(target)]
+    cmd = BASE_CMD + ["--name", name, str(target)]
     try:
         subprocess.check_call(cmd)
         if status_cb:
