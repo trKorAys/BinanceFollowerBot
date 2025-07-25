@@ -29,6 +29,6 @@ MESSAGES = {
     'buy_sent': 'Buy order for {symbol} with {amount:.2f} USDT sent',
     'buy_skipped': 'Buy skipped: {reason}',
     'api_recovered': '✔ *API connection restored*',
-    'api_error': '❗ *API connection error:* `{exc}`',
+    'api_error': '❗ *API connection error*',
     'new_ip': '❗ *New IP detected:* `{ip}`'
 }

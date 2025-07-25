@@ -167,5 +167,5 @@ def setup_telegram_menu(token: str) -> None:
     ]
     try:
         requests.post(url, json={"commands": commands}, timeout=10)
-    except Exception as exc:  # pragma: no cover - ağ hatası
-        log(f"Telegram komutları ayarlanamadı: {exc}")
+    except Exception:  # pragma: no cover - ağ hatası
+        log("Telegram komutlari ayarlanamadi")
