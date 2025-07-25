@@ -6,7 +6,8 @@ MESSAGES = {
     'report_unavailable': 'Report not available now',
     'no_report': 'No report yet',
     'report_header': 'End of Day Report:\n{msg}',
-    'balances': 'Balance Symbols:\n{symbols}',
+    'balances': 'Balance Symbols:
+{symbols}',
     'no_balance_symbols': 'No balance symbols',
     'no_tracked_symbols': 'No tracked symbols',
     'sell_unavailable': 'Sell not available now',

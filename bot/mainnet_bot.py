@@ -1,15 +1,4 @@
 import os
-import sys
-from pathlib import Path
-
-if getattr(sys, "frozen", False):
-    # PyInstaller tek dosya calistiginda kodlar _MEIPASS altina acilir.
-    base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-    sys.path.append(str(base))
-    __package__ = "bot"
-elif __name__ == "__main__" and (__package__ in (None, "")):
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    __package__ = "bot"
 
 # Bu dosya çalıştırıldığında ortam zorla mainnete ayarlanır
 os.environ["BINANCE_TESTNET"] = "false"
@@ -20,10 +9,10 @@ load_dotenv()
 import asyncio
 from binance import AsyncClient
 
-from bot.buy_bot import BuyBot
-from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from bot.telegram_listener import start_listener
-from bot.utils import log, setup_telegram_menu
+from .buy_bot import BuyBot
+from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from .telegram_listener import start_listener
+from .utils import log, setup_telegram_menu
 
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")

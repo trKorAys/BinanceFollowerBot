@@ -17,7 +17,6 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Positions worth less than **5 USDT** are ignored.
 - Logs specify which buying strategy was attempted each time.
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
-- Frontend tarafı, cihazın zaman dilimine göre saatleri otomatik dönüştürür.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
 - Target prices are printed whenever updated and instantaneous targets are shown on price changes.
@@ -38,7 +37,6 @@ A Python-based bot that monitors your Binance account and automatically sells wh
    pip install -r requirements.txt
    ```
    The bot will still run if `ta-lib` is missing; the SMA calculation will fall back to the internal method.
-   If the automatic install of `ta-lib` fails you can download a wheel matching your Python version from [cgohlke/talib-build](https://github.com/cgohlke/talib-build/releases) and install it manually with `pip install <file>.whl`.
 4. Copy the `.env.example` file from the repository to define environment variables:
    ```bash
    cp .env.example .env
@@ -63,9 +61,6 @@ The main variables in `.env` are:
 - `BALANCE_DB_PATH` is the SQLite file for end-of-day reports. Default is `balances.db`.
  - `BUY_DB_PATH` stores the most recent buy and sell times in SQLite. Default is `buy.db`.
 - Symbols stored here are checked before each cycle and any older than two hours are removed.
-- `STOP_LOSS_ENABLED` enables ATR-based stop losses when set to `true`.
-- `ATR_PERIOD` controls how many candles are used for ATR.
-- `STOP_LOSS_MULTIPLIER` multiplies the ATR value to set the stop level.
 
 ### Language Selection
 
@@ -99,7 +94,9 @@ Common time zone names include:
 - USA (New York): `America/New_York`
 - Japan: `Asia/Tokyo`
 - UK: `Europe/London`
-  
+
+When building a web UI you can feed the UTC value into JavaScript `Date` and let the browser display it using the device time zone. This keeps times in UTC‑0 on the backend while different devices see the correct local time. A minimal example is available in `examples/browser_time.html`. You can open this file directly in a browser to see how a fixed UTC string converts to your local time.
+
 ### API Limits
 
 Binance limits incoming requests using a "weight" system. The bot uses an internal counter to stay under the 6000 weight per minute limit. After each request the `X-MBX-USED-WEIGHT-1M` header is read to update the counter. If error `-1003` is returned the bot waits for the specified time. If too many symbols are tracked SellBot automatically splits them into groups and checks only part of them each cycle so the total API calls stay within safe bounds. By default each group contains **10** symbols.
@@ -176,22 +173,6 @@ To run the bot on Windows without installing dependencies you can generate stand
    python build_exe.py
    ```
    A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. It also works on systems without a command line. Move the files created under `dist/` together with `.env` to any folder you like.
-  The build script now calls PyInstaller with `--collect-all dateparser` and
-  adds `imghdr` as a hidden import so the required time zone cache and image
-  type detection module are packaged automatically. Without these options the
-  exe could fail with `dateparser_tz_cache.pkl` or `ModuleNotFoundError:
-  imghdr` errors.
-   Entry scripts now adjust `sys.path` when run directly so exes work without
-   import errors. Frozen exe'ler için `sys.frozen` kontrolü eklenerek ve
-   `sys._MEIPASS` dizini kullanılarak modül yolu otomatik ayarlanır, böylece
-  `bot` paketine ait içe aktarmalar hatasız çalışır. Böylece oluşturulan exe
-  çalıştırıldığında `ModuleNotFoundError: No module named 'bot'` hatası
-  görülmez. Paket adının boş string olması da kontrol edilerek PyInstaller
-  ile oluşturulan exe'lerin her ortamda sorunsuz başlaması sağlandı.
-  Ayrıca PyInstaller derlemesinde tüm modüllerin paketlenebilmesi için
-  `mainnet_bot.py` ve `testnet_bot.py` dosyalarındaki içe aktarmalar mutlak
-  hale getirildi. Bu sayede `bot` paketindeki kodlar eksiksiz şekilde
-  arşive eklenir.
 
 ## Running Tests
 
@@ -200,30 +181,8 @@ Run the unit tests in the project with:
 pytest -q
 ```
 The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. The bot now reports your total balance at the end of each day at UTC‑0 via Telegram. These reports are stored in the `balances.db` SQLite file so that the `/report` command can show previous days after a restart. When no suitable symbol is found on the buy side a new strategy checking for SMA‑7 break and SMA‑7 < SMA‑99 is used. `build_exe.py` now provides a simple interface for generating an exe with one click.
-Tests were also updated so `DummyDispatcher.add_handler` uses `handler.commands` when registering handlers.
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
-
-### Çeviri Dosyaları
-
-`bot/messages/messages_[ar|fr|ja|ko|ru|zh].py` dosyalarındaki `/balances` mesajı tek satıra indirildi:
-
-```python
-'balances': 'Balance Symbols:\n{symbols}',
-```
-
-Her dosyanın sorunsuz içe aktarılabildiğini doğrulamak için aşağıdaki komut kullanılabilir:
-
-```bash
-python -m bot.messages.messages_fr
-```
-Benzer şekilde diğer diller de aynı komutla kontrol edilebilir.
-
-### Planlananlar
-
-- PyInstaller derlemelerinde Python 3.13 desteği için `imghdr` modülü projenin
-  içine eklendi. İleride standart kütüphaneden kaldırılan diğer modüller
-  de aynı şekilde paketlenerek eski kodların sorunsuz çalışması sağlanacak.
 
 ## Support
 

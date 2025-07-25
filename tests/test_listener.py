@@ -28,7 +28,7 @@ def test_cmd_buy_handles_skip(monkeypatch):
         def __init__(self):
             self.handlers = {}
         def add_handler(self, handler):
-            self.handlers[next(iter(handler.commands))] = handler.callback
+            self.handlers[handler.command[0]] = handler.callback
 
     class DummyUpdater:
         def __init__(self, token, use_context=True):

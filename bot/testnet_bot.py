@@ -1,16 +1,4 @@
 import os
-import sys
-from pathlib import Path
-
-if getattr(sys, "frozen", False):
-    # PyInstaller tek dosya modunda kodlar gecici bir dizine cikarilir.
-    # `sys._MEIPASS` mevcutsa paketler buradan yuklenir.
-    base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-    sys.path.append(str(base))
-    __package__ = "bot"
-elif __name__ == "__main__" and (__package__ in (None, "")):
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    __package__ = "bot"
 
 # Testnet botu çalışırken ortam değişkeni daima true olmalı
 os.environ["BINANCE_TESTNET"] = "true"
@@ -21,10 +9,10 @@ load_dotenv()
 import asyncio
 from binance import AsyncClient
 
-from bot.buy_bot import BuyBot
-from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from bot.telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
-from bot.utils import log, setup_telegram_menu  # noqa: F401 - testler için içe aktarılıyor
+from .buy_bot import BuyBot
+from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from .telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
+from .utils import log, setup_telegram_menu  # noqa: F401 - testler için içe aktarılıyor
 
 API_KEY = os.getenv("BINANCE_TESTNET_API_KEY")
 API_SECRET = os.getenv("BINANCE_TESTNET_API_SECRET")
