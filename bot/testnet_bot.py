@@ -8,7 +8,7 @@ if getattr(sys, "frozen", False):
     base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
     sys.path.append(str(base))
     __package__ = "bot"
-elif __name__ == "__main__" and __package__ is None:
+elif __name__ == "__main__" and (__package__ in (None, "")):
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     __package__ = "bot"
 
