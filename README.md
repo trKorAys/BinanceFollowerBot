@@ -177,6 +177,9 @@ To run the bot on Windows without installing dependencies you can generate stand
    python build_exe.py
    ```
    A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. It also works on systems without a command line. Move the files created under `dist/` together with `.env` to any folder you like.
+   The build script now calls PyInstaller with `--collect-all dateparser` so the
+   required time zone cache is packaged automatically. Without this option the
+   exe could fail with `dateparser_tz_cache.pkl` errors.
 
 ## Running Tests
 
