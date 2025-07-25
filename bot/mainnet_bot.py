@@ -3,7 +3,9 @@ import sys
 from pathlib import Path
 
 if getattr(sys, "frozen", False):
-    sys.path.append(str(Path(sys.executable).resolve().parent))
+    # PyInstaller tek dosya calistiginda kodlar _MEIPASS altina acilir.
+    base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+    sys.path.append(str(base))
     __package__ = "bot"
 elif __name__ == "__main__" and __package__ is None:
     sys.path.append(str(Path(__file__).resolve().parent.parent))

@@ -181,9 +181,11 @@ To run the bot on Windows without installing dependencies you can generate stand
    required time zone cache is packaged automatically. Without this option the
    exe could fail with `dateparser_tz_cache.pkl` errors.
    Entry scripts now adjust `sys.path` when run directly so exes work without
-   import errors.
-   Frozen exe'ler için `sys.frozen` kontrolü eklenerek modül yolu otomatik
-   ayarlanır, böylece `bot` paketine ait içe aktarmalar hatasız çalışır.
+   import errors. Frozen exe'ler için `sys.frozen` kontrolü eklenerek ve
+   `sys._MEIPASS` dizini kullanılarak modül yolu otomatik ayarlanır, böylece
+   `bot` paketine ait içe aktarmalar hatasız çalışır. Böylece oluşturulan exe
+   çalıştırıldığında `ModuleNotFoundError: No module named 'bot'` hatası
+   görülmez.
 
 ## Running Tests
 
