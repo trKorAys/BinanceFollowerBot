@@ -243,7 +243,7 @@ def start_listener(loop: asyncio.AbstractEventLoop, sell_bot=None, buy_bot=None)
     except Exception as exc:  # pragma: no cover - network error
         msg = str(exc)
         if "terminated by other getUpdates" in msg or "Conflict" in msg or "409" in msg:
-            log(f"Telegram listener baslatilamadi: {exc}")
+            log("Telegram listener baslatilamadi")
             return
         raise
     log("Telegram listener baslatildi")

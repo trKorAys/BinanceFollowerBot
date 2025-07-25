@@ -23,6 +23,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - If the price drops back below any target level it is automatically sold.
 - When the highest target is passed and the price stays above it, a one minute volume analysis is repeated every cycle; if sell volume exceeds buy volume or the price dips back below the target an automatic sale is triggered.
 - Prices are monitored live via a websocket so sell decisions are applied without delay.
+- Telegram API hataları artık detay içermez, sadece hata olduğu bildirilir.
 
 ## Installation Steps
 

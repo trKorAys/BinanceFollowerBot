@@ -70,8 +70,8 @@ def send_telegram(text: str, chat_id: Optional[str] = None, force: bool = False)
     }
     try:
         requests.post(url, json=payload, timeout=10)
-    except Exception as exc:
-        log(f"Telegram hatası: {exc}")
+    except Exception:
+        log("Telegram API hatasi")
 
 
 def get_public_ip() -> str:

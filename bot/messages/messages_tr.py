@@ -28,6 +28,6 @@ MESSAGES = {
     'buy_sent': '{symbol} icin {amount:.2f} USDT ile alim emri gonderildi',
     'buy_skipped': 'Alim atlandi: {reason}',
     'api_recovered': '✔ *API bağlantısı düzeldi*',
-    'api_error': '❗ *API bağlantısı hatası:* `{exc}`',
+    'api_error': '❗ *API bağlantısı hatası*',
     'new_ip': '❗ *Yeni IP tespit edildi:* `{ip}`'
 }
