@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 from threading import Thread
+import os
+import dateparser
 
 try:
     import tkinter as tk
@@ -9,12 +11,21 @@ except Exception:  # pragma: no cover - optional on headless systems
     tk = None
     messagebox = None
 
-BASE_CMD = ["pyinstaller", "--onefile", "--clean", "--name"]
+DATA_FILE = Path(dateparser.__file__).parent / "data" / "dateparser_tz_cache.pkl"
+ADD_DATA_ARG = f"{DATA_FILE}{os.pathsep}dateparser/data"
+
+BASE_CMD = [
+    "pyinstaller",
+    "--onefile",
+    "--clean",
+    "--add-data",
+    ADD_DATA_ARG,
+]
 
 
 def build(target: Path, name: str, status_cb=None) -> None:
     """PyInstaller'i çağırarak tek dosyalık exe üret."""
-    cmd = BASE_CMD + [name, str(target)]
+    cmd = BASE_CMD + ["--name", name, str(target)]
     try:
         subprocess.check_call(cmd)
         if status_cb:
