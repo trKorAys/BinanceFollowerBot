@@ -197,6 +197,7 @@ Run the unit tests in the project with:
 pytest -q
 ```
 The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. The bot now reports your total balance at the end of each day at UTC‑0 via Telegram. These reports are stored in the `balances.db` SQLite file so that the `/report` command can show previous days after a restart. When no suitable symbol is found on the buy side a new strategy checking for SMA‑7 break and SMA‑7 < SMA‑99 is used. `build_exe.py` now provides a simple interface for generating an exe with one click.
+Tests were also updated so `DummyDispatcher.add_handler` uses `handler.commands` when registering handlers.
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 
