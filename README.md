@@ -37,6 +37,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
    pip install -r requirements.txt
    ```
    The bot will still run if `ta-lib` is missing; the SMA calculation will fall back to the internal method.
+   If the automatic install of `ta-lib` fails you can download a wheel matching your Python version from [cgohlke/talib-build](https://github.com/cgohlke/talib-build/releases) and install it manually with `pip install <file>.whl`.
 4. Copy the `.env.example` file from the repository to define environment variables:
    ```bash
    cp .env.example .env
