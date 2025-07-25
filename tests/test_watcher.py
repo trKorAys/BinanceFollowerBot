@@ -933,3 +933,46 @@ def test_check_new_balances_adds_only_new(monkeypatch):
     assert "ETHUSDT" in bot.positions
     assert "BTCUSDT" in bot.positions
     assert called
+
+
+def test_should_sell_triggers_stop_loss(monkeypatch):
+    monkeypatch.setenv("STOP_LOSS_ENABLED", "true")
+    import bot.sell_bot as bot_module
+    module = importlib.reload(bot_module)
+
+    class SLClient(DummyClient):
+        async def get_recent_trades(self, symbol, limit=60):
+            return []
+
+        async def get_symbol_ticker(self, symbol):
+            return {"price": "95"}
+
+        async def get_klines(self, symbol, interval, limit=2):
+            return [
+                [0, "100", "102", "98", "100", 0, 0, 0, 0, 0, "0", "0"],
+                [0, "0", "0", "0", "0", 0, 0, 0, 0, 0, "0", "0"],
+            ]
+
+    async def atr_klines(self, symbol, interval, limit):
+        data = []
+        base = 100
+        for i in range(limit):
+            o = base + i
+            data.append([0, str(o), str(o + 2), str(o - 2), str(o + 1), 0, 0, 0, 0, 0, "0", "0"])
+        return data
+
+    monkeypatch.setattr(SLClient, "get_klines", atr_klines)
+
+    module.ATR_PERIOD = 14
+    module.STOP_LOSS_MULTIPLIER = 1.0
+    watcher = module.SellBot(SLClient())
+    tracker = module.FifoTracker()
+    tracker.add_trade(1, 100.0)
+    watcher.positions["BTCUSDT"] = module.Position(tracker, 0.0, 0.0)
+
+    async def fake_vol(*_args, **_kwargs):
+        return 0.0
+
+    monkeypatch.setattr(module.SellBot, "get_volatility", fake_vol)
+    decision = asyncio.run(watcher.should_sell("BTCUSDT", 95.0, 100.0))
+    assert decision is True
