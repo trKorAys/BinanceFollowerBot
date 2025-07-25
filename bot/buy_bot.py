@@ -133,20 +133,18 @@ def calculate_sma(prices, period=SMA_PERIOD):
 
 
 def is_cross_over(prices):
-    """Fiyatın SMA-7 üzerine çıkması ve SMA-7 < SMA-25 < SMA-99 koşulu."""
+    """Fiyatın SMA-7 üzerine çıkması ve SMA-7 < SMA-99 koşulu."""
     sma_short = calculate_sma(prices, SMA_PERIOD)
-    sma_long = calculate_sma(prices, LONG_SMA_PERIOD)
     sma_long_long = calculate_sma(prices, LONG_LONG_SMA_PERIOD)
     if (
         len(sma_short) < 2
         or np.isnan(sma_short[-1])
         or np.isnan(sma_short[-2])
-        or np.isnan(sma_long[-1])
         or np.isnan(sma_long_long[-1])
     ):
         return False
     cross = prices[-1] > sma_short[-1] and prices[-2] < sma_short[-2]
-    return cross and sma_short[-1] < sma_long[-1] and sma_long[-1] < sma_long_long[-1]
+    return cross and sma_short[-1] < sma_long_long[-1]
 
 
 def _ema(values, period):
@@ -558,11 +556,11 @@ class BuyBot:
         return top[0], top[1]
 
     async def select_sma_cross(self):
-        """SMA-7 yukarı kırılımı ve SMA-7 < SMA-25 < SMA-99 koşulunu sağlayan ilk sembol."""
+        """SMA-7 yukarı kırılımı ve SMA-7 < SMA-99 koşulunu sağlayan ilk sembol."""
         symbols = await self.fetch_symbols()
         for symbol in symbols:
             try:
-                limit = max(SMA_PERIOD, LONG_SMA_PERIOD, LONG_LONG_SMA_PERIOD) + 2
+                limit = max(SMA_PERIOD, LONG_LONG_SMA_PERIOD) + 2
                 klines = await self.client.get_klines(
                     symbol=symbol, interval="15m", limit=limit
                 )

@@ -12,7 +12,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Contains an internal rate limiter so Binance API limits are not exceeded.
 - Easy switching between testnet and mainnet.
 - Telegram messages support multiple languages via the `TELEGRAM_LANG` variable.
-- If no suitable symbol is found, it attempts purchases on coins where the price is above SMA‑7 while SMA‑7 is below SMA‑25 and SMA‑25 is below SMA‑99.
+- If no suitable symbol is found, it attempts purchases on coins where the price is above SMA‑7 while SMA‑7 is below SMA‑99.
 - During the buy scan only the top `TOP_SYMBOLS_COUNT` symbols by USDT volume are considered and this list is automatically refreshed at 00, 06, 12 and 18 UTC‑0. Set `TOP_SYMBOLS_COUNT` in `.env` to change the default of 150.
 - Positions worth less than **5 USDT** are ignored.
 - Logs specify which buying strategy was attempted each time.
@@ -95,7 +95,7 @@ Common time zone names include:
 - Japan: `Asia/Tokyo`
 - UK: `Europe/London`
 
-When building a web UI you can feed the UTC value into JavaScript `Date` and let the browser display it using the device time zone. This keeps times in UTC‑0 on the backend while different devices see the correct local time. A minimal example is available in `examples/browser_time.html`.
+When building a web UI you can feed the UTC value into JavaScript `Date` and let the browser display it using the device time zone. This keeps times in UTC‑0 on the backend while different devices see the correct local time. A minimal example is available in `examples/browser_time.html`. You can open this file directly in a browser to see how a fixed UTC string converts to your local time.
 
 ### API Limits
 
@@ -180,7 +180,7 @@ Run the unit tests in the project with:
 ```bash
 pytest -q
 ```
-The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. The bot now reports your total balance at the end of each day at UTC‑0 via Telegram. These reports are stored in the `balances.db` SQLite file so that the `/report` command can show previous days after a restart. When no suitable symbol is found on the buy side a new strategy checking for SMA‑7 break and SMA‑7 < SMA‑25 < SMA‑99 is used. `build_exe.py` now provides a simple interface for generating an exe with one click.
+The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. The bot now reports your total balance at the end of each day at UTC‑0 via Telegram. These reports are stored in the `balances.db` SQLite file so that the `/report` command can show previous days after a restart. When no suitable symbol is found on the buy side a new strategy checking for SMA‑7 break and SMA‑7 < SMA‑99 is used. `build_exe.py` now provides a simple interface for generating an exe with one click.
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 

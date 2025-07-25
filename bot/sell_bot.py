@@ -47,6 +47,9 @@ TARGET_STEPS = int(os.getenv("TARGET_STEPS", "3"))
 GROUP_SIZE = int(os.getenv("GROUP_SIZE", "10"))
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "5"))
 BUY_DB_PATH = os.getenv("BUY_DB_PATH", "buy.db")
+STOP_LOSS_ENABLED = os.getenv("STOP_LOSS_ENABLED", "false").lower() == "true"
+ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
+STOP_LOSS_MULTIPLIER = float(os.getenv("STOP_LOSS_MULTIPLIER", "1.0"))
 
 def send_telegram(text: str, chat_id: Optional[str] = None, force: bool = False) -> None:
     """Telegram'a SellBot adıyla Markdown formatında mesaj gönder."""
@@ -717,6 +720,28 @@ class SellBot:
         except Exception:
             return 0.0
 
+    async def calculate_atr(self, symbol: str) -> float:
+        """Verilen sembol icin ATR (Average True Range) hesapla."""
+        try:
+            limit = ATR_PERIOD + 1
+            klines = await self.client.get_klines(
+                symbol=symbol, interval=CANDLE_INTERVAL, limit=limit
+            )
+            if len(klines) < limit:
+                return 0.0
+            prev_close = float(klines[0][4])
+            trs = []
+            for k in klines[1:]:
+                high = float(k[2])
+                low = float(k[3])
+                close = float(k[4])
+                tr = max(high - low, abs(high - prev_close), abs(prev_close - low))
+                trs.append(tr)
+                prev_close = close
+            return sum(trs) / len(trs) if trs else 0.0
+        except Exception:
+            return 0.0
+
     async def is_btc_above_sma7(self) -> bool:
         """BTC fiyatinin 7 gunluk SMA uzerinde olup olmadigini kontrol et."""
         try:
@@ -750,6 +775,14 @@ class SellBot:
         if avg_price == 0:
             log(f"{symbol} ortalama fiyat sifir, satis onceligi")
             return True
+        if STOP_LOSS_ENABLED:
+            atr = await self.calculate_atr(symbol)
+            stop_price = avg_price - atr * STOP_LOSS_MULTIPLIER
+            if atr > 0 and last_price <= stop_price:
+                log(
+                    f"{symbol} stop-loss seviyesi {stop_price:.8f} altinda, satis yapilacak"
+                )
+                return True
         steps = [base]
         if self.btc_above_sma7 and vol > base:
             steps.extend(
