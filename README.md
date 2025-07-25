@@ -179,7 +179,7 @@ To run the bot on Windows without installing dependencies you can generate stand
    ```bash
    python build_exe.py
    ```
-   A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. It also works on systems without a command line. Move the files created under `dist/` together with `.env` to any folder you like.
+   A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. Time zone cache data from `dateparser` is bundled automatically so the generated executables run without errors. Move the files created under `dist/` together with `.env` to any folder you like.
 
 ## Running Tests
 
@@ -194,6 +194,8 @@ Target levels are now divided into three steps from the fixed target up to the A
 ## Changes
 
 - Added instructions for manually installing the `ta-lib` `.whl` package when the regular pip command fails.
+- The Windows build script now includes the `dateparser_tz_cache.pkl` file so
+  executables no longer crash with a missing file error.
 
 ## Planned Features
 
