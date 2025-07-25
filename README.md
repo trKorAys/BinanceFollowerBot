@@ -98,12 +98,7 @@ Common time zone names include:
 - USA (New York): `America/New_York`
 - Japan: `Asia/Tokyo`
 - UK: `Europe/London`
-
-Backend tarafında tüm zamanlar daima UTC-0 formatında tutulur. 
-Web arayüzü geliştirirken bu UTC değerini JavaScript `Date` sınıfına gönderip tarayıcının bulunduğu saat diliminde gösterim yapabilirsiniz. 
-Böylece farklı cihazlar doğru yerel saatleri görürken veritabanında tek tip UTC-0 değerler saklanmış olur. 
-Basit bir örnek `examples/browser_time.html` dosyasında bulunuyor; bu dosyayı tarayıcıda açarak sabit bir UTC zamanın yerel saatinize nasıl döndüğünü görebilirsiniz.
-
+  
 ### API Limits
 
 Binance limits incoming requests using a "weight" system. The bot uses an internal counter to stay under the 6000 weight per minute limit. After each request the `X-MBX-USED-WEIGHT-1M` header is read to update the counter. If error `-1003` is returned the bot waits for the specified time. If too many symbols are tracked SellBot automatically splits them into groups and checks only part of them each cycle so the total API calls stay within safe bounds. By default each group contains **10** symbols.
