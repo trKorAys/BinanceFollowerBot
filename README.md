@@ -99,7 +99,10 @@ Common time zone names include:
 - Japan: `Asia/Tokyo`
 - UK: `Europe/London`
 
-When building a web UI you can feed the UTC value into JavaScript `Date` and let the browser display it using the device time zone. This keeps times in UTC‑0 on the backend while different devices see the correct local time. A minimal example is available in `examples/browser_time.html`. You can open this file directly in a browser to see how a fixed UTC string converts to your local time.
+Backend tarafında tüm zamanlar daima UTC-0 formatında tutulur. 
+Web arayüzü geliştirirken bu UTC değerini JavaScript `Date` sınıfına gönderip tarayıcının bulunduğu saat diliminde gösterim yapabilirsiniz. 
+Böylece farklı cihazlar doğru yerel saatleri görürken veritabanında tek tip UTC-0 değerler saklanmış olur. 
+Basit bir örnek `examples/browser_time.html` dosyasında bulunuyor; bu dosyayı tarayıcıda açarak sabit bir UTC zamanın yerel saatinize nasıl döndüğünü görebilirsiniz.
 
 ### API Limits
 
@@ -185,7 +188,8 @@ To run the bot on Windows without installing dependencies you can generate stand
    `sys._MEIPASS` dizini kullanılarak modül yolu otomatik ayarlanır, böylece
    `bot` paketine ait içe aktarmalar hatasız çalışır. Böylece oluşturulan exe
    çalıştırıldığında `ModuleNotFoundError: No module named 'bot'` hatası
-   görülmez.
+   görülmez. Paket adının boş string olması da kontrol edilerek PyInstaller
+   ile oluşturulan exe'lerin her ortamda sorunsuz başlaması sağlandı.
 
 ## Running Tests
 
