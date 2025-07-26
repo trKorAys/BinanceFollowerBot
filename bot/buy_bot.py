@@ -51,7 +51,6 @@ MIN_LOSER_USDT = 5.0  # Zarardaki bakiyeleri kontrol etmek icin alt limit
 MIN_FOLLOW_NOTIONAL = float(os.getenv("MIN_FOLLOW_NOTIONAL", "5"))
 SMA_PERIOD = 7 * 96  # 7 gunluk SMA icin 15 dakikalik mum sayisi
 LONG_SMA_PERIOD = 25 * 96  # 25 gunluk SMA
-LONG_LONG_SMA_PERIOD = 99 * 96  # 99 gunluk SMA
 TOP_SYMBOLS_COUNT = int(os.getenv("TOP_SYMBOLS_COUNT", "150"))
 BUY_DB_PATH = os.getenv("BUY_DB_PATH", "buy.db")
 EXCLUDED_BASES = [
@@ -133,18 +132,18 @@ def calculate_sma(prices, period=SMA_PERIOD):
 
 
 def is_cross_over(prices):
-    """Fiyatın SMA-7 üzerine çıkması ve SMA-7 < SMA-99 koşulu."""
+    """Kapanışın SMA-7'yi yukarı kesmesi ve SMA-7 < SMA-25 koşulu."""
     sma_short = calculate_sma(prices, SMA_PERIOD)
-    sma_long_long = calculate_sma(prices, LONG_LONG_SMA_PERIOD)
+    sma_long = calculate_sma(prices, LONG_SMA_PERIOD)
     if (
         len(sma_short) < 2
         or np.isnan(sma_short[-1])
         or np.isnan(sma_short[-2])
-        or np.isnan(sma_long_long[-1])
+        or np.isnan(sma_long[-1])
     ):
         return False
-    cross = prices[-1] > sma_short[-1] and prices[-2] < sma_short[-2]
-    return cross and sma_short[-1] < sma_long_long[-1]
+    cross = prices[-2] < sma_short[-2] and prices[-1] > sma_short[-1]
+    return cross and sma_short[-1] < sma_long[-1]
 
 
 def _ema(values, period):
@@ -556,11 +555,11 @@ class BuyBot:
         return top[0], top[1]
 
     async def select_sma_cross(self):
-        """SMA-7 yukarı kırılımı ve SMA-7 < SMA-99 koşulunu sağlayan ilk sembol."""
+        """SMA-7 yukarı kırılımı ve SMA-7 < SMA-25 koşulunu sağlayan ilk sembol."""
         symbols = await self.fetch_symbols()
         for symbol in symbols:
             try:
-                limit = max(SMA_PERIOD, LONG_LONG_SMA_PERIOD) + 2
+                limit = max(SMA_PERIOD, LONG_SMA_PERIOD) + 2
                 klines = await self.client.get_klines(
                     symbol=symbol, interval="15m", limit=limit
                 )
@@ -771,6 +770,8 @@ class BuyBot:
         last = self.last_buy_times.get(symbol)
         if not self.loss_check_enabled and last and now - last < timedelta(hours=2):
             log(f"{symbol} son iki saat icinde alindi, atlandi")
+            if symbol in self.top_symbols:
+                self.top_symbols.remove(symbol)
             return
         last_sell = self.last_sell_times.get(symbol)
         if not self.loss_check_enabled and last_sell and now - last_sell < timedelta(hours=2):

@@ -143,7 +143,6 @@ def test_select_symbols_ignores_open_candle(monkeypatch):
 def test_select_sma_cross(monkeypatch):
     buy_bot.SMA_PERIOD = 3
     buy_bot.LONG_SMA_PERIOD = 5
-    buy_bot.LONG_LONG_SMA_PERIOD = 7
 
     class DummyClient:
         async def get_exchange_info(self):
@@ -311,8 +310,10 @@ def test_skip_buy_if_recent(tmp_path, monkeypatch):
     now = datetime.now(timezone.utc)
     bot.last_buy_times["ABCUSDT"] = now - timedelta(hours=1)
     bot.loss_check_enabled = False
+    bot.top_symbols = ["ABCUSDT"]
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
     assert called["buy"] == 0
+    assert "ABCUSDT" not in bot.top_symbols
 
     bot.last_buy_times["ABCUSDT"] = now - timedelta(hours=3)
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
