@@ -14,6 +14,7 @@ from bot.utils import (
     convert_utc_to_env_timezone,
     extract_step_size,
     extract_min_qty,
+    extract_max_qty,
     extract_min_notional,
     seconds_until_next_midnight,
     seconds_until_next_six_hour,
@@ -75,6 +76,15 @@ def test_extract_min_qty():
     assert abs(extract_min_qty(info) - 0.5) < 1e-8
     info = {"filters": []}
     assert extract_min_qty(info) == 0.0
+
+
+def test_extract_max_qty():
+    info = {"filters": [{"filterType": "LOT_SIZE", "maxQty": "100"}]}
+    assert abs(extract_max_qty(info) - 100) < 1e-8
+    info = {"filters": [{"maxQty": "50"}]}
+    assert abs(extract_max_qty(info) - 50) < 1e-8
+    info = {"filters": []}
+    assert extract_max_qty(info) == float("inf")
 
 
 def test_extract_min_notional():

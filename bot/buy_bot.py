@@ -17,6 +17,7 @@ from .utils import (
     FifoTracker,
     extract_min_notional,
     extract_min_qty,
+    extract_max_qty,
     log,
     floor_to_precision,
     seconds_until_next_six_hour,
@@ -712,7 +713,11 @@ class BuyBot:
         min_notional = max(extract_min_notional(info), 5)
         if not check_loss:
             min_notional = max(min_notional, MIN_FOLLOW_NOTIONAL)
+        max_qty = extract_max_qty(info)
         notional = usdt_amount
+        if notional / price > max_qty:
+            log(f"{symbol} maxQty {max_qty} ile sinirlandi")
+            notional = max_qty * price
         if notional < min_notional:
             reason = "miktar yetersiz"
             self.last_skip_reason = reason
@@ -733,7 +738,7 @@ class BuyBot:
             precision = int(
                 info.get("quoteAssetPrecision") or info.get("quotePrecision", 8)
             )
-            amount = floor_to_precision(usdt_amount, precision)
+            amount = floor_to_precision(notional, precision)
             await self.client.create_order(
                 symbol=symbol,
                 side="BUY",

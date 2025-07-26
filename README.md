@@ -17,6 +17,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Positions worth less than **5 USDT** are ignored.
 - Logs specify which buying strategy was attempted each time.
 - Warns if `.env` is missing and falls back to system environment variables.
+- Buy orders are limited by the symbol's `maxQty` so requests never exceed the allowed amount.
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
@@ -200,6 +201,7 @@ Target levels are now divided into three steps from the fixed target up to the A
 ## Planned Features
 
 - Build a simple web interface that displays backend UTC‑0 timestamps in the browser's local time zone.
+- Further optimize order sizing by respecting additional exchange filters like `maxQty`.
 
 ## Support
 
