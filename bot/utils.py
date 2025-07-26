@@ -119,6 +119,18 @@ def extract_min_qty(info: dict) -> float:
     return 0.0
 
 
+def extract_max_qty(info: dict) -> float:
+    """Sembol bilgisinden maksimum miktarı güvenli şekilde çıkar."""
+    filters = info.get("filters", [])
+    for f in filters:
+        if f.get("filterType") == "LOT_SIZE" and "maxQty" in f:
+            return float(f["maxQty"])
+    for f in filters:
+        if "maxQty" in f:
+            return float(f["maxQty"])
+    return float("inf")
+
+
 def extract_min_notional(info: dict) -> float:
     """Sembol bilgisinden minimum notional değerini güvenli şekilde çıkar."""
     filters = info.get("filters", [])
