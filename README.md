@@ -203,12 +203,6 @@ The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setti
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 If target levels change while the price is below them, the previous high no longer triggers a sale until the new target is exceeded.
 
-
-## Planned Features
-
-- Build a simple web interface that displays backend UTC‑0 timestamps in the browser's local time zone.
-- Further optimize order sizing by respecting additional exchange filters like `maxQty`.
-
 ## Support
 
 For donations our USDT address is: `THz1ssvnpVcmt9Kk24x4wD5XCMZBtnubnE`
