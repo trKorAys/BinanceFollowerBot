@@ -23,6 +23,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Recently sold symbols are also remembered and skipped for two hours.
 - Symbols skipped because of a recent buy are removed from the volume list until it refreshes.
 - Target prices are printed whenever updated and instantaneous targets are shown on price changes.
+- When BTC is above SMA‑7 and the last closed candle opened higher than your average buy price, targets are calculated from that opening price.
 - Targets update also reset the peak price so sales only happen after the new target is surpassed.
 - If the price drops back below any target level it is automatically sold.
 - When the highest target is passed and the price stays above it, a one minute volume analysis is repeated every cycle; if sell volume exceeds buy volume or the price dips back below the target an automatic sale is triggered.

@@ -274,9 +274,45 @@ def test_should_sell_uses_open_price_when_higher(monkeypatch):
         return 0.0
 
     monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
-    watcher.btc_above_sma7 = False
+    watcher.btc_above_sma7 = True
     decision = asyncio.run(watcher.should_sell("BTCUSDT", 112.0, 100.0))
     assert decision is False
+
+
+def test_open_price_ignored_when_btc_below_sma(monkeypatch):
+    class OpenClient(DummyClient):
+        async def get_recent_trades(self, symbol, limit=60):
+            return [
+                {"qty": "2", "isBuyerMaker": True},
+                {"qty": "1", "isBuyerMaker": False},
+            ]
+
+        async def get_symbol_ticker(self, symbol):
+            return {"price": "112"}
+
+        async def get_klines(self, symbol, interval, limit=2):
+            return [
+                [0, "110", 0, 0, "105", 0, 0, 0, 0, 0, "0", "0"],
+                [0, "0", 0, 0, "0", 0, 0, 0, 0, 0, "0", "0"],
+            ]
+
+    import bot.sell_bot as bot_module
+    bot_module.FEE_BUY = 0.0
+    bot_module.FEE_SELL = 0.0
+    bot_module.MIN_PROFIT = 0.1
+    bot_module.TARGET_STEPS = 1
+    watcher = bot_module.SellBot(OpenClient())
+    tracker = bot_module.FifoTracker()
+    tracker.add_trade(1, 100.0)
+    watcher.positions["BTCUSDT"] = bot_module.Position(tracker, 0.0, 0.0)
+    watcher.positions["BTCUSDT"].peak = 112.0
+    async def fake_vol(*_args, **_kwargs):
+        return 0.0
+
+    monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
+    watcher.btc_above_sma7 = False
+    decision = asyncio.run(watcher.should_sell("BTCUSDT", 112.0, 100.0))
+    assert decision is True
 
 
 def test_sell_when_above_last_target(monkeypatch):

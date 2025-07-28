@@ -795,7 +795,11 @@ class SellBot:
         steps = sorted(set(steps))
         open_price = await self.get_last_open_price(symbol)
         base_price = avg_price
-        if open_price and open_price > avg_price:
+        if (
+            self.btc_above_sma7
+            and open_price
+            and open_price > avg_price
+        ):
             base_price = open_price
         targets = [base_price * (1 + s) for s in steps]
         target_str = ", ".join(f"{t:.8f}" for t in targets)
