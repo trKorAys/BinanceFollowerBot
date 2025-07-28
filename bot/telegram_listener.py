@@ -7,6 +7,8 @@ from .sell_bot import send_telegram
 from .utils import log
 from .messages import t
 
+TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
+
 
 def _format_position(symbol, position, price):
     avg = position.tracker.average_price()
@@ -32,6 +34,9 @@ def _authorized(chat_id: str) -> bool:
 
 def start_listener(loop: asyncio.AbstractEventLoop, sell_bot=None, buy_bot=None) -> None:
     """Telegram bot komutlarini dinle."""
+    if not TELEGRAM_ENABLED:
+        log("Telegram devre disi, listener baslatilmadi")
+        return
     token = os.getenv("TELEGRAM_TOKEN")
     if not token:
         log("TELEGRAM_TOKEN tanimsiz, listener baslatilmadi")
