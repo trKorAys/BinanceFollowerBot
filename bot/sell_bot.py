@@ -798,6 +798,9 @@ class SellBot:
         if target_str != pos.targets_str:
             log(f"{symbol} hedef fiyatlar güncellendi: {target_str}")
             pos.targets_str = target_str
+            pos.passed_steps.clear()
+            pos.hit_top_target = False
+            pos.peak = last_price
         profit_ratio = (last_price - base_price) / base_price if base_price else 0
         extreme_step = steps[-1]
         if profit_ratio >= extreme_step * 5:

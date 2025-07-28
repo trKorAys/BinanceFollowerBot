@@ -437,8 +437,13 @@ def test_sell_when_step_lost(monkeypatch):
 
     monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
     watcher.btc_above_sma7 = True
+    # Hedef güncellendiğinde fiyat hedef üzerine çıkmadığı için satış yapmaz
     decision = asyncio.run(watcher.should_sell("BTCUSDT", 105.0, 100.0))
-    assert decision is True
+    assert decision is False
+    # Fiyat hedef geçildikten sonra altına düşerse satış yapar
+    pos.peak = 115.0
+    decision2 = asyncio.run(watcher.should_sell("BTCUSDT", 105.0, 100.0))
+    assert decision2 is True
 
 
 def test_sell_without_volume_when_profit_five_times(monkeypatch):
