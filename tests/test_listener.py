@@ -21,6 +21,18 @@ def test_start_listener_conflict(monkeypatch):
     assert any('baslatilamadi' in m for m in logs)
 
 
+def test_listener_disabled(monkeypatch):
+    logs = []
+    monkeypatch.setattr(listener, 'log', lambda m: logs.append(m))
+    monkeypatch.setenv('TELEGRAM_ENABLED', 'false')
+    loop = asyncio.new_event_loop()
+    try:
+        listener.start_listener(loop)
+    finally:
+        loop.close()
+    assert any('devre disi' in m for m in logs)
+
+
 def test_cmd_buy_handles_skip(monkeypatch):
     messages = []
 

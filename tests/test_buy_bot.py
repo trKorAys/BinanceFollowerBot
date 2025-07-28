@@ -786,6 +786,22 @@ def test_send_telegram_prefix(monkeypatch):
     assert messages and messages[0].startswith("TESTNET")
 
 
+def test_send_telegram_disabled(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_ENABLED", "false")
+    module = importlib.reload(buy_bot)
+    calls = []
+
+    def fake_post(url, json=None, timeout=10):
+        calls.append("sent")
+
+    monkeypatch.setattr(module.requests, "post", fake_post)
+    module.TELEGRAM_TOKEN = "T"
+    module.CHAT_ID = "C"
+    monkeypatch.setattr(module, "log", lambda m: calls.append(m))
+    module.send_telegram("deneme")
+    assert "sent" not in calls
+
+
 def test_start_message_once(monkeypatch):
     monkeypatch.setenv("BINANCE_TESTNET", "false")
     module = importlib.reload(buy_bot)

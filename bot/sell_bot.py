@@ -36,6 +36,7 @@ API_SECRET = (
 )
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
 FEE_BUY = float(os.getenv("FEE_BUY_PERCENT", "0.1")) / 100
 FEE_SELL = float(os.getenv("FEE_SELL_PERCENT", "0.1")) / 100
 MIN_PROFIT = float(os.getenv("MIN_PROFIT_PERCENT", "0.5")) / 100
@@ -58,6 +59,9 @@ def send_telegram(text: str, chat_id: Optional[str] = None, force: bool = False)
         if not force:
             log(text)
             return
+    if not TELEGRAM_ENABLED:
+        log(text)
+        return
     chat_id = chat_id or CHAT_ID
     if not TELEGRAM_TOKEN or not chat_id:
         log(text)

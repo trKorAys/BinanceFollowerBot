@@ -60,6 +60,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 The main variables in `.env` are:
 - `BINANCE_API_KEY` and `BINANCE_API_SECRET`
 - `TELEGRAM_TOKEN` and `TELEGRAM_CHAT_ID`
+- `TELEGRAM_ENABLED` disables all Telegram features when set to `false`
 - `FEE_BUY_PERCENT`, `FEE_SELL_PERCENT`, `MIN_PROFIT_PERCENT`
 - `BINANCE_TESTNET` enables testnet mode.
 - `USDT_USAGE_RATIO` defines the portion of USDT to use for each buy cycle.
@@ -78,6 +79,7 @@ The Telegram language is chosen with the `TELEGRAM_LANG` variable in `.env`. Sup
 
 ```bash
 TELEGRAM_LANG=en
+TELEGRAM_ENABLED=true
 ```
 
 ### Creating a Binance Testnet Account
@@ -148,6 +150,7 @@ Exit the virtual environment with:
 source deactivate
 ```
 These two files ignore the `BINANCE_TESTNET` value in `.env` and configure the required mode themselves. To test only the sell side on testnet enable `BINANCE_TESTNET=true` and run `python -m bot.sell_bot` again. Both bots report which network they are on and how many symbols are tracked via Telegram along with the IP address at startup. If the Telegram token is in use elsewhere the detected `Conflict` error prevents the chat bot from starting. All symbols in your balance are monitored even in testnet mode. Set `LOCAL_TIMEZONE` in `.env` to control log and console output times. For example `LOCAL_TIMEZONE=Europe/Istanbul` writes all logs in Turkish time. In testnet mode general notifications are no longer sent to Telegram; only buy operations and sales (if the buy price is not `0`) are reported. Other info is printed to the console. Important parts of notifications are **bold** and copyable fields such as IP or errors are wrapped in backticks. Trailing commas and spaces are cleaned up from all Telegram messages. Every message sent in testnet mode is prefixed with **TESTNET**. After an API error the next attempt waits 10 seconds. Sales of balances with a buy price of `0` are not announced via Telegram. The testnet bot no longer creates a Telegram menu and the chat bot is disabled; commands are active only in mainnet mode.
+Setting `TELEGRAM_ENABLED=false` disables all Telegram notifications and the chat bot regardless of other settings.
 
 ## Telegram Commands
 
