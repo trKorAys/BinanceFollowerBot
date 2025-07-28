@@ -186,6 +186,7 @@ To run the bot on Windows without installing dependencies you can generate stand
    py -3 build_exe.py
    ```
    A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. Time zone cache data from `dateparser` is bundled automatically so the generated executables run without errors. Move the files created under `dist/` together with `.env` to any folder you like.
+   Translation modules are now imported statically so multilingual Telegram messages also work in the exe.
 
 ## Running Tests
 
