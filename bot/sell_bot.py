@@ -800,7 +800,7 @@ class SellBot:
             and open_price
             and open_price > avg_price
         ):
-            base_price = open_price
+            base_price = base_price + ((open_price-base_price)/2)
         targets = [base_price * (1 + s) for s in steps]
         target_str = ", ".join(f"{t:.8f}" for t in targets)
         if target_str != pos.targets_str:
