@@ -12,10 +12,10 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Contains an internal rate limiter so Binance API limits are not exceeded.
 - Easy switching between testnet and mainnet.
 - Telegram messages support multiple languages via the `TELEGRAM_LANG` variable.
-- If no suitable symbol is found, it attempts purchases when the price crosses above SMA‑7 while SMA‑7 is below SMA‑25.
+- Eğer uygun sembol bulunamazsa RSI < 50 iken fiyat alt Keltner bandını yukarı keser ve ATR < 200 ise alım yapılır. Bu strateji yalnızca BTC'nin 15 dakikalık kapanışı 99 günlük SMA üzerinde ise devreye girer.
 - During the buy scan only the top `TOP_SYMBOLS_COUNT` symbols by USDT volume are considered and this list is automatically refreshed at 00, 06, 12 and 18 UTC‑0. Set `TOP_SYMBOLS_COUNT` in `.env` to change the default of 150.
 - Positions worth less than **5 USDT** are ignored.
-- Logs specify which buying strategy was attempted each time.
+- Logs specify when zarardan alış veya RSI-Keltner stratejisi denendi.
 - Warns if `.env` is missing and falls back to system environment variables.
 - Buy orders are limited by the symbol's `maxQty` so requests never exceed the allowed amount.
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
@@ -28,6 +28,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - If the price drops back below any target level it is automatically sold.
 - When the highest target is passed and the price stays above it, a one minute volume analysis is repeated every cycle; if sell volume exceeds buy volume or the price dips back below the target an automatic sale is triggered.
 - Prices are monitored live via a websocket so sell decisions are applied without delay.
+- BTC son 15 dakikalık kapanışı 99 günlük SMA'nın altına düşerse tüm pozisyonlar satılır.
 - Telegram API hataları artık detay içermez, sadece hata olduğu bildirilir.
 
 ## Installation Steps
@@ -199,7 +200,7 @@ Run the unit tests in the project with:
 ```bash
 pytest -q
 ```
-The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. The bot now reports your total balance at the end of each day at UTC‑0 via Telegram. These reports are stored in the `balances.db` SQLite file so that the `/report` command can show previous days after a restart. When no suitable symbol is found on the buy side a new strategy checking for SMA‑7 break and SMA‑7 < SMA‑25 is used. `build_exe.py` now provides a simple interface for generating an exe with one click.
+The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. RSI 50 altında fiyat alt Keltner bandını yukarı keser ve ATR 200'den küçükse otomatik alım yapılır. `build_exe.py` now provides a simple interface for generating an exe with one click.
 
 Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
 If target levels change while the price is below them, the previous high no longer triggers a sale until the new target is exceeded.
@@ -207,3 +208,9 @@ If target levels change while the price is below them, the previous high no long
 ## Support
 
 For donations our USDT address is: `THz1ssvnpVcmt9Kk24x4wD5XCMZBtnubnE`
+
+## Planlananlar
+
+- RSI ve Keltner parametrelerinin .env uzerinden ayarlanabilmesi
+- Web arayuzu ile grafik gosterimi
+- BTC SMA periyodunun ve zaman dilimlerinin ayarlanabilmesi

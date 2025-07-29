@@ -53,6 +53,7 @@ MIN_LOSER_USDT = 5.0  # Zarardaki bakiyeleri kontrol etmek icin alt limit
 MIN_FOLLOW_NOTIONAL = float(os.getenv("MIN_FOLLOW_NOTIONAL", "5"))
 SMA_PERIOD = 7 * 96  # 7 gunluk SMA icin 15 dakikalik mum sayisi
 LONG_SMA_PERIOD = 25 * 96  # 25 gunluk SMA
+MAX_ATR = 200  # Yeni RSI-Keltner stratejisi icin ATR ust limiti
 TOP_SYMBOLS_COUNT = int(os.getenv("TOP_SYMBOLS_COUNT", "150"))
 BUY_DB_PATH = os.getenv("BUY_DB_PATH", "buy.db")
 EXCLUDED_BASES = [
@@ -278,6 +279,23 @@ def meets_buy_conditions(opens, highs, lows, closes, volumes):
     return all([cond_a, cond_b, cond_c, cond_d, cond_e, cond_f])
 
 
+def meets_rsi_keltner(highs, lows, closes):
+    """RSI < 50, alt Keltner kesisi ve ATR < MAX_ATR kosullarini kontrol et."""
+    if len(closes) < 20:
+        return False
+    rsi = _rsi(closes)
+    if rsi.size == 0 or np.isnan(rsi[-1]) or rsi[-1] >= 50:
+        return False
+    upper, lower = _keltner(highs, lows, closes)
+    if len(lower) < 2:
+        return False
+    cross = closes[-2] < lower[-2] and closes[-1] > lower[-1]
+    if not cross:
+        return False
+    atr = _atr(highs, lows, closes)[-1]
+    return atr < MAX_ATR
+
+
 class BuyBot:
     def __init__(self, client: AsyncClient):
         self.client = client
@@ -493,9 +511,7 @@ class BuyBot:
             first_symbol = await self.select_loser()
             if not first_symbol:
                 self.loss_check_enabled = False
-                first_symbol = await self.select_symbol()
-                if not first_symbol:
-                    first_symbol = await self.select_sma_cross()
+                first_symbol = await self.select_rsi_keltner()
         if not self.start_notified:
             send_start_message(mode, self.current_ip, 1 if first_symbol else 0)
             self.start_notified = True
@@ -518,18 +534,10 @@ class BuyBot:
             await self.update_top_symbols()
         return list(self.top_symbols)
 
-    async def select_symbol(self):
-        """Beşli Doğrulama Alım Stratejisi."""
+    async def select_rsi_keltner(self):
+        """Yeni RSI-Keltner stratejisini saglayan ilk sembol."""
         symbols = await self.fetch_symbols()
-        candidates = []  # (symbol, close, buy_vol, sell_vol)
         for symbol in symbols:
-            try:
-                ticker = await self.client.get_ticker(symbol=symbol)
-            except Exception:
-                continue
-            volume = float(ticker.get("volume", 0))
-            buy_vol = float(ticker.get("takerBuyBaseAssetVolume", 0))
-            sell_vol = volume - buy_vol
             try:
                 limit = 60
                 klines = await self.client.get_klines(symbol=symbol, interval="15m", limit=limit)
@@ -537,45 +545,32 @@ class BuyBot:
                 continue
             if len(klines) < limit:
                 continue
-            opens = [float(k[1]) for k in klines[:-1]]
             highs = [float(k[2]) for k in klines[:-1]]
             lows = [float(k[3]) for k in klines[:-1]]
             closes = [float(k[4]) for k in klines[:-1]]
-            volumes = [float(k[5]) for k in klines[:-1]]
-            if meets_buy_conditions(opens, highs, lows, closes, volumes):
-                candidates.append((symbol, closes[-1], buy_vol, sell_vol))
-
-        filtered = [c for c in candidates if c[2] > c[3]]
-
-        if filtered:
-            # pick the coin with highest buy/sell volume ratio
-            best = max(filtered, key=lambda x: x[2] / max(x[3], 1e-8))
-            return best[0], best[1]
-
-        if not candidates:
-            return None
-
-        candidates.sort(key=lambda x: x[2], reverse=True)
-        top = candidates[0]
-        return top[0], top[1]
-
-    async def select_sma_cross(self):
-        """SMA-7 yukarı kırılımı ve SMA-7 < SMA-25 koşulunu sağlayan ilk sembol."""
-        symbols = await self.fetch_symbols()
-        for symbol in symbols:
-            try:
-                limit = max(SMA_PERIOD, LONG_SMA_PERIOD) + 2
-                klines = await self.client.get_klines(
-                    symbol=symbol, interval="15m", limit=limit
-                )
-            except Exception:
-                continue
-            if len(klines) < limit:
-                continue
-            closes = [float(k[4]) for k in klines[:-1]]
-            if is_cross_over(closes):
+            if meets_rsi_keltner(highs, lows, closes):
                 return symbol, closes[-1]
         return None
+
+    async def is_btc_above_sma99(self) -> bool:
+        """BTC son kapali 15m mumu SMA99 gunluk uzerinde mi?"""
+        try:
+            d_klines = await self.client.get_klines(
+                symbol="BTCUSDT", interval="1d", limit=99
+            )
+            if len(d_klines) < 99:
+                return False
+            closes = [float(k[4]) for k in d_klines]
+            sma = sum(closes) / len(closes)
+            m15 = await self.client.get_klines(
+                symbol="BTCUSDT", interval="15m", limit=2
+            )
+            if len(m15) < 2:
+                return False
+            last_close = float(m15[-2][4])
+            return last_close > sma
+        except Exception:
+            return False
 
     async def fetch_all_trades(self, symbol: str):
         """Tüm geçmiş işlemleri baştan sona sayfalayarak getir."""
@@ -809,13 +804,14 @@ class BuyBot:
         candidate = await self.select_loser()
         self.loss_check_enabled = True
         if not candidate:
-            log("Beşli Doğrulama Alım Stratejisi kontrol ediliyor")
-            candidate = await self.select_symbol()
-            self.loss_check_enabled = False
-        if not candidate:
-            log("SMA stratejisi kontrol ediliyor")
-            candidate = await self.select_sma_cross()
-            self.loss_check_enabled = False
+            log("BTC SMA99 kontrol ediliyor")
+            if await self.is_btc_above_sma99():
+                log("RSI-Keltner stratejisi kontrol ediliyor")
+                candidate = await self.select_rsi_keltner()
+                self.loss_check_enabled = False
+            else:
+                log("BTC SMA99 altinda, alım yok")
+                candidate = None
         await self._execute_cycle(candidate, usdt * USDT_USAGE_RATIO)
 
 

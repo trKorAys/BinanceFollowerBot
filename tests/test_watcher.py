@@ -744,6 +744,42 @@ def test_check_positions_groups(monkeypatch):
     assert called == ["S2USDT"]
 
 
+def test_btc_sma99_stop(monkeypatch):
+    module = importlib.reload(bot_module)
+
+    class Dummy(DummyClient):
+        async def get_account(self):
+            return {"balances": [{"asset": "A", "free": "1", "locked": "0"}]}
+
+        async def get_symbol_info(self, symbol):
+            return {"filters": [{"filterType": "LOT_SIZE", "minQty": "0.1"}]}
+
+        async def get_my_trades(self, symbol, limit=1000, fromId=None):
+            return [{"id": 0, "qty": "1", "price": "10", "isBuyer": True}]
+
+        async def get_symbol_ticker(self, symbol):
+            return {"price": "10"}
+
+    watcher = module.SellBot(Dummy())
+    asyncio.run(watcher.load_balances())
+    sold = []
+
+    async def fake_sell(self, symbol, qty):
+        sold.append(symbol)
+
+    monkeypatch.setattr(module.SellBot, "execute_sell", fake_sell)
+    async def fake_btc(self):
+        return True
+
+    monkeypatch.setattr(module.SellBot, "is_btc_below_sma99", fake_btc)
+    async def fake_sync(self):
+        pass
+
+    monkeypatch.setattr(module.SellBot, "sync_time", fake_sync)
+    asyncio.run(watcher.check_positions())
+    assert "AUSDT" in sold
+
+
 def test_send_telegram_prefix(monkeypatch):
     monkeypatch.setenv("BINANCE_TESTNET", "true")
     module = importlib.reload(bot_module)
