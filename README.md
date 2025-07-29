@@ -1,218 +1,58 @@
 # Binance Follower Bot
 
-A Python-based bot that monitors your Binance account and automatically sells when certain conditions are met. Purchases are tracked with the FIFO method and profit targets are determined according to current volatility. Notifications are delivered through Telegram. Existing balances are checked concurrently at startup. The number of simultaneous API calls is controlled with the `CONCURRENCY_LIMIT` value in the `.env` file.
+Bu bot, Binance API üzerinden alım satım işlemlerini takip etmenize yardımcı olur. Telegram üzerinden komut gönderebilir ve bildirim alabilirsiniz. Kod Python ile yazılmıştır.
 
-## Features
+## Kurulum
 
-- Tracks buy and sell operations using FIFO logic.
-- Calculates dynamic profit targets based on recent market movement.
-- Adds a fixed target equal to the sum of fees and minimum profit on top of three ATR-based levels.
-- Sends notifications and responds to commands over Telegram.
-- Supports price queries and manual buy/sell commands on Telegram.
-- Contains an internal rate limiter so Binance API limits are not exceeded.
-- Easy switching between testnet and mainnet.
-- Telegram messages support multiple languages via the `TELEGRAM_LANG` variable.
-- Ichimoku, DMI ve CMF gibi çoklu indikatörleri içeren eski alım filtresi kaldırıldı.
-- Eğer uygun sembol bulunamazsa RSI < 50 iken fiyat alt Keltner bandını yukarı keser ve ATR < 200 ise alım yapılır. Bu strateji yalnızca BTC'nin 15 dakikalık kapanışı 99 günlük SMA üzerinde ise devreye girer.
-- During the buy scan only the top `TOP_SYMBOLS_COUNT` symbols by USDT volume are considered and this list is automatically refreshed at 00, 06, 12 and 18 UTC‑0. Set `TOP_SYMBOLS_COUNT` in `.env` to change the default of 150.
-- Positions worth less than **5 USDT** are ignored.
-- Logs specify when zarardan alış veya RSI-Keltner stratejisi denendi.
-- Warns if `.env` is missing and falls back to system environment variables.
-- Buy orders are limited by the symbol's `maxQty` so requests never exceed the allowed amount.
-- Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
-- Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
-- Recently sold symbols are also remembered and skipped for two hours.
-- Cüzdan bakiyesi her saatin **55. dakikasında** kontrol edilir; yeni alınan coinler takibe eklenir ve mevcut pozisyonların ortalama maliyeti güncellenir.
-- Symbols skipped because of a recent buy are removed from the volume list until it refreshes.
-- Target prices are printed whenever updated and instantaneous targets are shown on price changes.
-- When BTC is above the 7-period SMA on the 15-minute chart and the last closed candle opened higher than your average buy price, targets are calculated from that opening price.
-- Targets update also reset the peak price so sales only happen after the new target is surpassed.
-- If the price drops back below any target level it is automatically sold.
-- When the highest target is passed and the price stays above it, a one minute volume analysis is repeated every cycle; if sell volume exceeds buy volume or the price dips back below the target an automatic sale is triggered.
-- Prices are monitored live via a websocket so sell decisions are applied without delay.
-- BTC son 15 dakikalık kapanışı 15 dakikalık SMA-99'un altına düşerse tüm pozisyonlar satılır.
-- Telegram API hataları artık detay içermez, sadece hata olduğu bildirilir.
-
-## Installation Steps
-
-1. Ensure **Python 3.8+** is installed on your system.
-2. Create and activate a virtual environment:
+1. Python 3.8 veya üzeri bir sürüm kurulu olmalıdır.
+2. Sanal ortam oluşturup etkinleştirin:
    ```bash
    python -m venv venv
    source venv/bin/activate
    ```
-3. Install required libraries:
+3. Gerekli paketleri yükleyin:
    ```bash
    pip install -r requirements.txt
    ```
-   The bot will still run if `ta-lib` is missing; the SMA calculation will fall back to the internal method.
-   If `pip install ta-lib` fails, download the appropriate `.whl` file from [here](https://github.com/cgohlke/talib-build/releases) and install it manually:
-   ```bash
-   pip install TA_Lib‑<version>.whl
-   ```
-4. Copy the `.env.example` file from the repository to define environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Fill in the fields with your own information. You can store your API keys, Telegram token and other settings here.
-   If `.env` is missing at startup the bot warns and reads values from existing environment variables.
-5. Create a new bot via `@BotFather` on Telegram and place the token in `TELEGRAM_TOKEN`. Add the bot to your chat group and after sending `/start`, record the `chat -> id` value from `https://api.telegram.org/botTOKEN/getUpdates` as `TELEGRAM_CHAT_ID`.
-   When you run the `mainnet` or `testnet` bot the Telegram menu will automatically display `/start`, `/summary` and `/help`. These commands are now handled by a listener. `/summary` shows your current total balance while `/help` lists all commands.
+   `ta-lib` kurulamazsa bot yine çalışır.
+4. `cp .env.example .env` komutu ile ortam değişkenlerini tanımlayın ve kendi bilgilerinizi girin.
+5. Telegram'da `@BotFather` üzerinden bir bot oluşturup token değerini `TELEGRAM_TOKEN` alanına yazın. `TELEGRAM_CHAT_ID` için botla konuşup `getUpdates` sonucundaki chat id'yi kullanın.
 
-## Environment Variables
+## Ortam Değişkenleri
 
-The main variables in `.env` are:
-- `BINANCE_API_KEY` and `BINANCE_API_SECRET`
-- `TELEGRAM_TOKEN` and `TELEGRAM_CHAT_ID`
-- `TELEGRAM_ENABLED` disables all Telegram features when set to `false`
-- `FEE_BUY_PERCENT`, `FEE_SELL_PERCENT`, `MIN_PROFIT_PERCENT`
-- `BINANCE_TESTNET` enables testnet mode.
-- `USDT_USAGE_RATIO` defines the portion of USDT to use for each buy cycle.
-- `MIN_FOLLOW_NOTIONAL` sets the minimum USDT value required for regular buys and tracked positions.
-- `LOSS_BUY_THRESHOLD_PERCENT` is the minimum loss percentage required to buy again. Default is **2**.
-- `CHECK_INTERVAL` is the interval in seconds for the sell side loop. In testnet mode this value is automatically **60** seconds.
-- `GROUP_SIZE` is how many symbols SellBot checks each cycle. Default is **10**.
-- `CONCURRENCY_LIMIT` determines how many API calls are made concurrently during the initial balance check. Default is **5**.
-- `BALANCE_DB_PATH` is the SQLite file for end-of-day reports. Default is `balances.db`.
- - `BUY_DB_PATH` stores the most recent buy and sell times in SQLite. Default is `buy.db`.
-- Symbols stored here are checked before each cycle and any older than two hours are removed.
+`.env` dosyasında en sık kullanılan değişkenler:
+- `BINANCE_API_KEY`, `BINANCE_API_SECRET`
+- `BINANCE_TESTNET` (true/false)
+- `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`
+- `LOCAL_TIMEZONE` (örn. `Europe/Istanbul`)
 
-### Language Selection
+Tüm değişkenler için `.env.example` dosyasına bakabilirsiniz.
 
-The Telegram language is chosen with the `TELEGRAM_LANG` variable in `.env`. Supported languages are `en`, `de`, `tr`, `fr`, `ar`, `zh`, `ru`, `ja`, `ko`. If left empty Turkish will be used.
+## Kullanım
+
+Sanal ortam aktifleştirildikten sonra bot aşağıdaki komutlarla çalıştırılır:
 
 ```bash
-TELEGRAM_LANG=en
-TELEGRAM_ENABLED=true
+python -m bot.sell_bot       # Sadece satış tarafı
+python -m bot.buy_bot        # Sadece alış tarafı
+python -m bot.testnet_bot    # Testnet ortamında her ikisi
+python -m bot.mainnet_bot    # Gerçek ortamda her ikisi
 ```
 
-### Creating a Binance Testnet Account
+Çıkmak için `deactivate` komutunu kullanabilirsiniz.
 
-To operate in the testnet environment visit [testnet.binance.vision](https://testnet.binance.vision/), log in with your GitHub account and create an account. After logging in, generate a new *Testnet API* key from the **API Key** section of the user menu. Enter the resulting `API Key` and `Secret Key` in the `.env` file as `BINANCE_TESTNET_API_KEY` and `BINANCE_TESTNET_API_SECRET`, then enable testnet mode with `BINANCE_TESTNET=true`.
+## Zaman Dilimi
 
-The testnet account is completely independent from your real balances and trades are made with virtual funds. Orders do not affect the real exchange but the same API rules apply. All calls use `testnet.binance.vision` instead of `api.binance.com` and commissions are approximated.
+Backend tarafında bütün zaman bilgileri **UTC‑0** olarak tutulur. Loglar ve Telegram mesajları `LOCAL_TIMEZONE` değişkeni tanımlıysa bu değere, aksi halde sistem saat dilimine çevrilerek gösterilir. Tarayıcı tabanlı arayüzlerde zamanlar cihazın saat dilimine göre gösterilir.
 
-See `.env.example` for all values. Remember that percentages are specified in real values (`0.5` = 0.5%).
+## Testler
 
-### Time Zone Settings
-
-Timestamps are always stored as **UTC‑0** on the backend. The frontend uses the device time zone for display. To see output in your local time use the helper functions in `bot.utils`:
-
-- `convert_utc_to_local(utc_str)` converts a UTC value to your system time zone.
-- `convert_utc_to_timezone(utc_str, "Europe/Istanbul")` converts to any zone you choose.
-- `convert_utc_to_env_timezone(utc_str)` converts according to the `LOCAL_TIMEZONE` variable in `.env`.
-
-If `LOCAL_TIMEZONE` is defined log messages also use this time zone. Leave it empty to use the system zone. For example setting `LOCAL_TIMEZONE=Europe/Istanbul` will produce logs in Turkish time.
-
-Common time zone names include:
-- Turkey: `Europe/Istanbul`
-- Germany: `Europe/Berlin`
-- USA (New York): `America/New_York`
-- Japan: `Asia/Tokyo`
-- UK: `Europe/London`
-
-When building a web UI you can feed the UTC value into JavaScript `Date` and let the browser display it using the device time zone. This keeps times in UTC‑0 on the backend while different devices see the correct local time. A minimal example is available in `examples/browser_time.html`. You can open this file directly in a browser to see how a fixed UTC string converts to your local time.
-
-### API Limits
-
-Binance limits incoming requests using a "weight" system. The bot uses an internal counter to stay under the 6000 weight per minute limit. After each request the `X-MBX-USED-WEIGHT-1M` header is read to update the counter. If error `-1003` is returned the bot waits for the specified time. If too many symbols are tracked SellBot automatically splits them into groups and checks only part of them each cycle so the total API calls stay within safe bounds. By default each group contains **10** symbols.
-
-## File Structure
-- `bot/buy_bot.py` – Handles averaging down on positions in loss and processes new buy signals.
-- `bot/sell_bot.py` – Monitors current positions and sells when profit targets are reached.
-- `bot/testnet_bot.py` – Runs both bots in the Binance testnet environment.
-- `bot/mainnet_bot.py` – Starts BuyBot and SellBot together on mainnet.
-- `bot/utils.py` – Utility functions for time handling and more. Trades with a price of `0` are saved with a fixed price of `0.0000001` here.
-- `bot/rate_limiter.py` – Helper module controlling the API weight limits.
-- `bot/telegram_listener.py` – Helper module that listens for Telegram commands.
-
-## Usage
-
-Activate the virtual environment:
-```bash
-source venv/bin/activate
-```
-To start the sell side:
-```bash
-python -m bot.sell_bot
-```
-To start the buy side:
-```bash
-python -m bot.buy_bot
-```
-To run both on the testnet:
-```bash
-python -m bot.testnet_bot
-```
-To run both bots together in live mode:
-```bash
-python -m bot.mainnet_bot
-```
-
-Exit the virtual environment with:
-```bash
-source deactivate
-```
-These two files ignore the `BINANCE_TESTNET` value in `.env` and configure the required mode themselves. To test only the sell side on testnet enable `BINANCE_TESTNET=true` and run `python -m bot.sell_bot` again. Both bots report which network they are on and how many symbols are tracked via Telegram along with the IP address at startup. If the Telegram token is in use elsewhere the detected `Conflict` error prevents the chat bot from starting. All symbols in your balance are monitored even in testnet mode. Set `LOCAL_TIMEZONE` in `.env` to control log and console output times. For example `LOCAL_TIMEZONE=Europe/Istanbul` writes all logs in Turkish time. In testnet mode general notifications are no longer sent to Telegram; only buy operations and sales (if the buy price is not `0`) are reported. Other info is printed to the console. Important parts of notifications are **bold** and copyable fields such as IP or errors are wrapped in backticks. Trailing commas and spaces are cleaned up from all Telegram messages. Every message sent in testnet mode is prefixed with **TESTNET**. After an API error the next attempt waits 10 seconds. Sales of balances with a buy price of `0` are not announced via Telegram. The testnet bot no longer creates a Telegram menu and the chat bot is disabled; commands are active only in mainnet mode.
-Setting `TELEGRAM_ENABLED=false` disables all Telegram notifications and the chat bot regardless of other settings.
-
-## Telegram Commands
-
-While the bot is running you can send the following commands via Telegram:
-
-- `/start` – Confirms the bot is active.
-- `/summary` – Shows your current total balance in USDT.
-- `/report` – Lists the last end-of-day balances (data is read from `balances.db`).
-- `/balances` – Lists all symbols with a balance.
-- `/positions` – Shows the status of tracked symbols.
-- `/price <Symbol>` – Returns the current price for the given symbol.
-- `/free` – Shows your free USDT balance.
-- `/buy <Symbol>` – Buys using all free USDT.
-- `/sell <Symbol>` – Sells the entire specified symbol.
-- `/help` – Sends a summary of available commands.
-
-### Telegram Chat Bot
-
-`bot/telegram_listener.py` is a simple chat bot that waits for commands via Telegram. It automatically starts when `mainnet_bot.py` or `testnet_bot.py` is run and responds to `/start`, `/summary` and `/help`. Commands are listened for in a separate thread so bot operations continue uninterrupted. All messages are generated with UTC‑0 timestamps but the Telegram app shows them in your device time zone. This keeps backend times always in UTC‑0 while the chat screen uses local time.
-
-Commands are automatically sent to the chat ID from which they originate. Commands from chats not matching the `TELEGRAM_CHAT_ID` value in `.env` are replied to as "unauthorized". You can provide multiple IDs separated by commas.
-
-### Building an Exe on Windows
-
-To run the bot on Windows without installing dependencies you can generate standalone executables using `PyInstaller`.
-
-1. Install PyInstaller:
-   ```bash
-   pip install pyinstaller
-   ```
-2. Run the `build_exe.py` script in the repository root:
-   ```bash
-   python build_exe.py
-   ```
-   veya
-   ```bash
-   py -3 build_exe.py
-   ```
-   A small window will open allowing one‑click creation of an exe for `mainnet` or `testnet`. Time zone cache data from `dateparser` is bundled automatically so the generated executables run without errors. Move the files created under `dist/` together with `.env` to any folder you like.
-   Translation modules are now imported statically so multilingual Telegram messages also work in the exe.
-
-## Running Tests
-
-Run the unit tests in the project with:
+Projede yer alan testleri çalıştırmak için:
 ```bash
 pytest -q
 ```
-The `test_env_timezone_conversion` test verifies that the `LOCAL_TIMEZONE` setting works correctly. RSI 50 altında fiyat alt Keltner bandını yukarı keser ve ATR 200'den küçükse otomatik alım yapılır. `build_exe.py` now provides a simple interface for generating an exe with one click.
 
-Target levels are now divided into three steps from the fixed target up to the ATR target. Each target is printed when updated and a sale is executed if the price falls below that target. Once the highest target is passed and the price remains above it, a one minute volume analysis is repeated every cycle. If sell volume is higher than buy volume or the price drops back below the target, an automatic sale is made.
-If target levels change while the price is below them, the previous high no longer triggers a sale until the new target is exceeded.
+## Güncellemeler ve Planlar
 
-## Support
-
-For donations our USDT address is: `THz1ssvnpVcmt9Kk24x4wD5XCMZBtnubnE`
-
-## Planlananlar
-
-- RSI ve Keltner parametrelerinin .env uzerinden ayarlanabilmesi
-- Web arayuzu ile grafik gosterimi
-- BTC SMA periyodunun ve zaman dilimlerinin ayarlanabilmesi
+- README sadeleştirildi ve sadece kurulum ile kullanım adımlarını içerecek şekilde güncellendi.
+- Zaman bilgileri artık daima UTC‑0 olarak alınarak istemcinin saat dilimine göre gösteriliyor.
