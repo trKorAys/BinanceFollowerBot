@@ -7,8 +7,6 @@ from bot.sell_bot import send_telegram
 from bot.utils import log
 from bot.messages import t
 
-
-
 def _format_position(symbol, position, price):
     avg = position.tracker.average_price()
     profit = (price - avg) * position.tracker.total_qty()
