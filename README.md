@@ -51,10 +51,3 @@ Projede yer alan testleri çalıştırmak için:
 ```bash
 pytest -q
 ```
-
-## Güncellemeler ve Planlar
-
-- README sadeleştirildi ve sadece kurulum ile kullanım adımlarını içerecek şekilde güncellendi.
-- Zaman bilgileri artık daima UTC‑0 olarak alınarak istemcinin saat dilimine göre gösteriliyor.
-- Başlangıçta alım yapılacak sembol kontrolü kaldırıldı; tarama 15 dakikalık periyotlarda gerçekleşiyor.
-- Aynı sembol son iki saat içinde alınmışsa başka sembol deneniyor ve gerekirse listeden çıkartılıyor.
