@@ -176,28 +176,6 @@ def _atr(highs, lows, closes, period=14):
     return _ema(trs, period)
 
 
-def _dmi(highs, lows, closes, period=14):
-    highs = np.array(highs, dtype=float)
-    lows = np.array(lows, dtype=float)
-    closes = np.array(closes, dtype=float)
-    plus_dm = np.zeros_like(highs)
-    minus_dm = np.zeros_like(lows)
-    for i in range(1, len(highs)):
-        up = highs[i] - highs[i - 1]
-        down = lows[i - 1] - lows[i]
-        if up > down and up > 0:
-            plus_dm[i] = up
-        if down > up and down > 0:
-            minus_dm[i] = down
-    tr = _atr(highs, lows, closes, 1)
-    atr = _ema(tr, period)
-    plus_di = 100 * _ema(plus_dm, period) / (atr + 1e-8)
-    minus_di = 100 * _ema(minus_dm, period) / (atr + 1e-8)
-    dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di + 1e-8)
-    adx = _ema(dx, period)
-    return adx, plus_di, minus_di
-
-
 def _rsi(closes, period=14):
     closes = np.array(closes, dtype=float)
     if len(closes) < period + 1:
@@ -218,23 +196,6 @@ def _rsi(closes, period=14):
     return rsi
 
 
-def _ichimoku(highs, lows):
-    highs = np.array(highs, dtype=float)
-    lows = np.array(lows, dtype=float)
-
-    def _rolling_max(arr, p):
-        return np.array([np.max(arr[i - p + 1 : i + 1]) if i >= p - 1 else np.nan for i in range(len(arr))])
-
-    def _rolling_min(arr, p):
-        return np.array([np.min(arr[i - p + 1 : i + 1]) if i >= p - 1 else np.nan for i in range(len(arr))])
-
-    tenkan = (_rolling_max(highs, 9) + _rolling_min(lows, 9)) / 2
-    kijun = (_rolling_max(highs, 26) + _rolling_min(lows, 26)) / 2
-    span_a = (tenkan + kijun) / 2
-    span_b = (_rolling_max(highs, 52) + _rolling_min(lows, 52)) / 2
-    return tenkan, kijun, span_a, span_b
-
-
 def _keltner(highs, lows, closes, period_ema=20, period_atr=10, mult=1.5):
     ema = _ema(closes, period_ema)
     atr = _atr(highs, lows, closes, period_atr)
@@ -243,40 +204,6 @@ def _keltner(highs, lows, closes, period_ema=20, period_atr=10, mult=1.5):
     return upper, lower
 
 
-def _chaikin_money_flow(highs, lows, closes, volumes, period=20):
-    highs = np.array(highs, dtype=float)
-    lows = np.array(lows, dtype=float)
-    closes = np.array(closes, dtype=float)
-    volumes = np.array(volumes, dtype=float)
-    mfm = ((closes - lows) - (highs - closes)) / (highs - lows + 1e-8)
-    mfv = mfm * volumes
-    cmf = []
-    for i in range(len(closes)):
-        if i + 1 < period:
-            cmf.append(np.nan)
-        else:
-            mfv_sum = mfv[i - period + 1 : i + 1].sum()
-            vol_sum = volumes[i - period + 1 : i + 1].sum()
-            cmf.append(mfv_sum / (vol_sum + 1e-8))
-    return np.array(cmf)
-
-
-def meets_buy_conditions(opens, highs, lows, closes, volumes):
-    """Tüm indikatör koşullarını değerlendir."""
-    if len(closes) < 52:
-        return False
-    tenkan, kijun, span_a, span_b = _ichimoku(highs, lows)
-    cond_a = closes[-1] > span_a[-1] and closes[-1] > span_b[-1]
-    cond_b = tenkan[-1] > kijun[-1]
-    adx, plus_di, minus_di = _dmi(highs, lows, closes)
-    cond_c = adx[-1] >= 25 and plus_di[-1] > minus_di[-1]
-    upper, _ = _keltner(highs, lows, closes)
-    cond_d = closes[-2] <= upper[-2] and closes[-1] > upper[-1]
-    cmf = _chaikin_money_flow(highs, lows, closes, volumes)
-    cond_e = cmf[-1] > 0
-    rsi = _rsi(closes)
-    cond_f = rsi.size > 2 and rsi[-1] > 40 and rsi[-1] < 60
-    return all([cond_a, cond_b, cond_c, cond_d, cond_e, cond_f])
 
 
 def meets_rsi_keltner(highs, lows, closes):

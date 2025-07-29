@@ -9,21 +9,9 @@ import asyncio
 import pytest
 from datetime import datetime, timezone, timedelta
 import bot.buy_bot as buy_bot
-from bot.buy_bot import calculate_sma, meets_buy_conditions
+from bot.buy_bot import calculate_sma
 
 buy_bot.SMA_PERIOD = 7
-
-
-def test_meets_buy_conditions_bool():
-    opens = [1] * 60
-    highs = [1.1] * 60
-    lows = [0.9] * 60
-    closes = [1 + i * 0.01 for i in range(60)]
-    volumes = [100] * 60
-    assert isinstance(
-        meets_buy_conditions(opens[:-1], highs[:-1], lows[:-1], closes[:-1], volumes[:-1]),
-        bool,
-    )
 
 
 def test_testnet_env_overrides(monkeypatch):

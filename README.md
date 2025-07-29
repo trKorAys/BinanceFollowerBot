@@ -12,6 +12,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Contains an internal rate limiter so Binance API limits are not exceeded.
 - Easy switching between testnet and mainnet.
 - Telegram messages support multiple languages via the `TELEGRAM_LANG` variable.
+- Ichimoku, DMI ve CMF gibi çoklu indikatörleri içeren eski alım filtresi kaldırıldı.
 - Eğer uygun sembol bulunamazsa RSI < 50 iken fiyat alt Keltner bandını yukarı keser ve ATR < 200 ise alım yapılır. Bu strateji yalnızca BTC'nin 15 dakikalık kapanışı 99 günlük SMA üzerinde ise devreye girer.
 - During the buy scan only the top `TOP_SYMBOLS_COUNT` symbols by USDT volume are considered and this list is automatically refreshed at 00, 06, 12 and 18 UTC‑0. Set `TOP_SYMBOLS_COUNT` in `.env` to change the default of 150.
 - Positions worth less than **5 USDT** are ignored.
@@ -21,14 +22,15 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
+- Her döngüde bakiye kontrolü yapılarak yeni alınan coinler otomatik olarak takibe eklenir ve mevcut pozisyonların ortalama maliyeti güncellenir.
 - Symbols skipped because of a recent buy are removed from the volume list until it refreshes.
 - Target prices are printed whenever updated and instantaneous targets are shown on price changes.
-- When BTC is above SMA‑7 and the last closed candle opened higher than your average buy price, targets are calculated from that opening price.
+- When BTC is above the 7-period SMA on the 15-minute chart and the last closed candle opened higher than your average buy price, targets are calculated from that opening price.
 - Targets update also reset the peak price so sales only happen after the new target is surpassed.
 - If the price drops back below any target level it is automatically sold.
 - When the highest target is passed and the price stays above it, a one minute volume analysis is repeated every cycle; if sell volume exceeds buy volume or the price dips back below the target an automatic sale is triggered.
 - Prices are monitored live via a websocket so sell decisions are applied without delay.
-- BTC son 15 dakikalık kapanışı 99 günlük SMA'nın altına düşerse tüm pozisyonlar satılır.
+- BTC son 15 dakikalık kapanışı 15 dakikalık SMA-99'un altına düşerse tüm pozisyonlar satılır.
 - Telegram API hataları artık detay içermez, sadece hata olduğu bildirilir.
 
 ## Installation Steps
