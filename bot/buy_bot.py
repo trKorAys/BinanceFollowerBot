@@ -274,7 +274,7 @@ def meets_buy_conditions(opens, highs, lows, closes, volumes):
     cmf = _chaikin_money_flow(highs, lows, closes, volumes)
     cond_e = cmf[-1] > 0
     rsi = _rsi(closes)
-    cond_f = rsi.size > 0 and rsi[-1] < 70
+    cond_f = rsi.size > 2 and rsi[-1] < 60 and rsi[-2] > 40
     return all([cond_a, cond_b, cond_c, cond_d, cond_e, cond_f])
 
 
