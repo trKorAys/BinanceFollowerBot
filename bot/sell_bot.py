@@ -740,7 +740,9 @@ class SellBot:
             log("API hatası devam ediyor, kontrol atlandı")
             return
         await self.sync_time()
-        await self.check_new_balances()
+        now = datetime.now(timezone.utc)
+        if now.minute == 55:
+            await self.check_new_balances()
         if await self.is_btc_below_sma99():
             log("BTC SMA99 altinda, tum pozisyonlar satiliyor")
             await self.sell_all_positions()
