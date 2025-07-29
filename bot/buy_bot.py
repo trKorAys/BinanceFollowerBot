@@ -529,9 +529,7 @@ class BuyBot:
                     )
                     min_qty = extract_min_qty(info)
                     if qty < min_qty:
-                        log(
-                            f"{symbol} bakiyesi {qty:.8f} minQty {min_qty:.8f} altında, atlandı"
-                        )
+                        #log(f"{symbol} bakiyesi {qty:.8f} minQty {min_qty:.8f} altında, atlandı")
                         return None
                     last_price = float(ticker["price"])
                     if qty * last_price < MIN_LOSER_USDT:
