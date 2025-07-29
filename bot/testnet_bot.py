@@ -3,19 +3,18 @@ import os
 # Testnet botu çalışırken ortam değişkeni daima true olmalı
 os.environ["BINANCE_TESTNET"] = "true"
 
-from .utils import log, setup_telegram_menu, load_env  # noqa: F401 - testler için içe aktarılıyor
+from bot.utils import log, setup_telegram_menu, load_env  # noqa: F401 - testler için içe aktarılıyor
 load_env()
 
 import asyncio
 from binance import AsyncClient
 
-from .buy_bot import BuyBot
-from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from .telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
+from bot.buy_bot import BuyBot
+from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from bot.telegram_listener import start_listener  # noqa: F401 - testler için içe aktarılıyor
 
 API_KEY = os.getenv("BINANCE_TESTNET_API_KEY")
 API_SECRET = os.getenv("BINANCE_TESTNET_API_SECRET")
-
 
 async def main():
     log("Testnet botu baslatiliyor")
