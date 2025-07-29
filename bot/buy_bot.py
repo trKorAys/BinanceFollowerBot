@@ -432,24 +432,10 @@ class BuyBot:
             await self.ensure_testnet_balance()
         await self.update_top_symbols()
         asyncio.create_task(self.symbols_update_loop())
-        first_symbol = None
-        self.loss_check_enabled = True
-        if not self.api_down:
-            first_symbol = await self.select_loser()
-            if not first_symbol:
-                self.loss_check_enabled = False
-                first_symbol = await self.select_rsi_keltner()
         if not self.start_notified:
-            send_start_message(mode, self.current_ip, 1 if first_symbol else 0)
+            send_start_message(mode, self.current_ip, 0)
             self.start_notified = True
         asyncio.create_task(self.monitor_api())
-        if not self.api_down and first_symbol:
-            try:
-                bal = await self.client.get_asset_balance(asset="USDT")
-                usdt = float(bal.get("free", 0))
-            except Exception:
-                usdt = 0.0
-            await self._execute_cycle(first_symbol, usdt * USDT_USAGE_RATIO)
         while True:
             now = datetime.now(timezone.utc)
             wait = (15 - (now.minute % 15)) * 60 - now.second
