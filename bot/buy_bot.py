@@ -465,21 +465,16 @@ class BuyBot:
                 return symbol, closes[-1]
         return None
 
-    async def is_btc_above_sma99(self) -> bool:
-        """BTC son kapali 15m mumu SMA99 gunluk uzerinde mi?"""
+    async def is_btc_above_sma25(self) -> bool:
+        """BTC 15m SMA25 üzerindeyse True döndür."""
         try:
-            d_klines = await self.client.get_klines(
-                symbol="BTCUSDT", interval="1d", limit=99
-            )
-            if len(d_klines) < 99:
-                return False
-            closes = [float(k[4]) for k in d_klines]
-            sma = sum(closes) / len(closes)
             m15 = await self.client.get_klines(
-                symbol="BTCUSDT", interval="15m", limit=2
+                symbol="BTCUSDT", interval="15m", limit=26
             )
-            if len(m15) < 2:
+            if len(m15) < 26:
                 return False
+            closes = [float(k[4]) for k in m15[-26:-1]]
+            sma = sum(closes[-25:]) / 25
             last_close = float(m15[-2][4])
             return last_close > sma
         except Exception:
@@ -506,8 +501,8 @@ class BuyBot:
             await asyncio.sleep(0.2)
         return all_trades
 
-    async def select_loser(self):
-        """Zarardaki pozisyonlar arasından en çok düşene ait sembolü döndür."""
+    async def select_losers(self):
+        """Zarardaki tüm pozisyonları kayıp miktarına göre sırala."""
         try:
             account = await self.client.get_account()
         except Exception:
@@ -570,14 +565,9 @@ class BuyBot:
         tasks = [handle_balance(bal) for bal in account.get("balances", [])]
         results = await asyncio.gather(*tasks)
 
-        worst = None
-        for res in results:
-            if res is not None and (worst is None or res[0] > worst[0]):
-                worst = res
-
-        if worst:
-            return worst[2], worst[3]
-        return None
+        losers = [r for r in results if r is not None]
+        losers.sort(key=lambda x: x[0], reverse=True)
+        return [(sym, price, loss) for loss, _percent, sym, price in losers]
 
     async def execute_buy(self, symbol: str, usdt_amount: float, check_loss: bool = True) -> bool:
         """Piyasa alım emri gönder. Başarılıysa True döner."""
@@ -703,6 +693,25 @@ class BuyBot:
         if not candidate:
             log("Uygun sembol bulunamadi")
 
+    async def _execute_weighted_losers(self, candidates, usdt_amount: float):
+        """Birden fazla zarardaki sembolde orantili alım yap."""
+        if not candidates:
+            log("Uygun sembol bulunamadi")
+            return
+        self._cleanup_recent_buys()
+        self._cleanup_recent_sells()
+        log(f"Serbest USDT bakiyesi: {usdt_amount:.8f}")
+        if usdt_amount < MIN_LOSER_USDT:
+            log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
+            return
+        total_loss = sum(loss for _sym, _price, loss in candidates)
+        if total_loss <= 0:
+            log("Uygun sembol bulunamadi")
+            return
+        for symbol, _price, loss in candidates:
+            portion = usdt_amount * (loss / total_loss)
+            await self.execute_buy(symbol, portion, check_loss=True)
+
     async def run(self):
         if self.api_down:
             log("API hatasi devam ediyor, tarama atlandi")
@@ -721,18 +730,20 @@ class BuyBot:
             return
         log("Sembol taramasi basladi")
         log("Zarar stratejisi kontrol ediliyor")
-        candidate = await self.select_loser()
+        candidates = await self.select_losers()
         self.loss_check_enabled = True
-        if not candidate:
-            log("BTC SMA99 kontrol ediliyor")
-            if await self.is_btc_above_sma99():
+        if not candidates:
+            log("BTC SMA25 kontrol ediliyor")
+            if await self.is_btc_above_sma25():
                 log("RSI-Keltner stratejisi kontrol ediliyor")
                 candidate = await self.select_rsi_keltner()
                 self.loss_check_enabled = False
             else:
-                log("BTC SMA99 altinda, alım yok")
+                log("BTC SMA25 altinda, alım yok")
                 candidate = None
-        await self._execute_cycle(candidate, usdt * USDT_USAGE_RATIO)
+            await self._execute_cycle(candidate, usdt * USDT_USAGE_RATIO)
+        else:
+            await self._execute_weighted_losers(candidates, usdt * USDT_USAGE_RATIO)
 
 
 async def main():
