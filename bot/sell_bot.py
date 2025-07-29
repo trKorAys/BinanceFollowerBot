@@ -201,6 +201,8 @@ class SellBot:
                 await self.price_socket_task
             except asyncio.CancelledError:
                 pass
+        if not getattr(self, "bsm", None):
+            return
         if self.positions:
             self.price_socket_task = asyncio.create_task(
                 self.listen_price_socket(self.bsm)
@@ -313,8 +315,7 @@ class SellBot:
                 if asset in ("USDT", "BUSD"):
                     return
                 symbol = f"{asset}USDT"
-                if symbol in self.positions:
-                    return
+                existing = self.positions.get(symbol)
                 try:
                     info = await self.client.get_symbol_info(symbol)
                 except BinanceAPIException:
@@ -362,21 +363,36 @@ class SellBot:
                 min_notional = max(extract_min_notional(info), MIN_FOLLOW_NOTIONAL)
 
                 if tracker.total_qty() < min_qty or tracker.total_qty() * last_price < min_notional:
+                    if existing:
+                        self.positions.pop(symbol, None)
                     return
 
-                self.positions[symbol] = Position(tracker, min_qty, min_notional)
-                avg = tracker.average_price()
-                log(
-                    f"{symbol} bakiyesi bulundu: miktar={tracker.total_qty():.8f}, ortalama={avg:.8f}"
-                )
-                profit = (last_price - avg) * tracker.total_qty()
-                percent = (last_price - avg) / avg * 100 if avg else 0.0
-                send_telegram(
-                    f"📌 *{symbol} takibe alindi.*\n"
-                    f"💲 *Ortalama Fiyat:* `{avg:.8f}`\n"
-                    f"💱 *Mevcut Fiyat:* `{last_price:.8f}`\n"
-                    f"⏳ *Kar:* `{profit:.4f}` ({percent:.2f}%)"
-                )
+                if existing:
+                    old_avg = existing.tracker.average_price()
+                    existing.tracker = tracker
+                    existing.min_qty = min_qty
+                    existing.min_notional = min_notional
+                    avg = tracker.average_price()
+                    if abs(avg - old_avg) > 1e-8:
+                        log(f"{symbol} ortalama guncellendi: {avg:.8f}")
+                        send_telegram(
+                            f"🔄 *{symbol} ortalama guncellendi*\n"
+                            f"💹 *Yeni Ortalama:* `{avg:.8f}`"
+                        )
+                else:
+                    self.positions[symbol] = Position(tracker, min_qty, min_notional)
+                    avg = tracker.average_price()
+                    log(
+                        f"{symbol} bakiyesi bulundu: miktar={tracker.total_qty():.8f}, ortalama={avg:.8f}"
+                    )
+                    profit = (last_price - avg) * tracker.total_qty()
+                    percent = (last_price - avg) / avg * 100 if avg else 0.0
+                    send_telegram(
+                        f"📌 *{symbol} takibe alindi.*\n"
+                        f"💲 *Ortalama Fiyat:* `{avg:.8f}`\n"
+                        f"💱 *Mevcut Fiyat:* `{last_price:.8f}`\n"
+                        f"⏳ *Kar:* `{profit:.4f}` ({percent:.2f}%)"
+                    )
 
         tasks = [scan_symbol(b) for b in balances]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -724,6 +740,7 @@ class SellBot:
             log("API hatası devam ediyor, kontrol atlandı")
             return
         await self.sync_time()
+        await self.check_new_balances()
         if await self.is_btc_below_sma99():
             log("BTC SMA99 altinda, tum pozisyonlar satiliyor")
             await self.sell_all_positions()
@@ -801,13 +818,13 @@ class SellBot:
             return None
 
     async def is_btc_above_sma7(self) -> bool:
-        """BTC fiyatinin 7 gunluk SMA uzerinde olup olmadigini kontrol et."""
+        """BTC fiyatinin son 7 adet 15 dakikalık SMA'sı üzerinde olup olmadığını kontrol et."""
         try:
-            klines = await self.client.get_klines(symbol="BTCUSDT", interval="1d", limit=7)
-            if len(klines) < 7:
+            klines = await self.client.get_klines(symbol="BTCUSDT", interval="15m", limit=8)
+            if len(klines) < 8:
                 return False
-            closes = [float(k[4]) for k in klines]
-            sma = sum(closes) / 7
+            closes = [float(k[4]) for k in klines[:-1]]
+            sma = sum(closes[-7:]) / 7
             ticker = await self.client.get_symbol_ticker(symbol="BTCUSDT")
             price = float(ticker["price"])
             return price > sma
@@ -815,21 +832,16 @@ class SellBot:
             return False
 
     async def is_btc_below_sma99(self) -> bool:
-        """BTC son kapali 15m mumu SMA99 gunluk altinda mi?"""
+        """BTC son kapanmış 15m mumu, 99 periyotluk 15m SMA'nın altında mı?"""
         try:
             klines = await self.client.get_klines(
-                symbol="BTCUSDT", interval="1d", limit=99
+                symbol="BTCUSDT", interval="15m", limit=100
             )
-            if len(klines) < 99:
+            if len(klines) < 100:
                 return False
-            closes = [float(k[4]) for k in klines]
-            sma = sum(closes) / len(closes)
-            m15 = await self.client.get_klines(
-                symbol="BTCUSDT", interval="15m", limit=2
-            )
-            if len(m15) < 2:
-                return False
-            last_close = float(m15[-2][4])
+            closes = [float(k[4]) for k in klines[:-1]]
+            sma = sum(closes[-99:]) / 99
+            last_close = float(klines[-2][4])
             return last_close < sma
         except Exception:
             return False

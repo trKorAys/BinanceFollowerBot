@@ -1012,6 +1012,40 @@ def test_check_new_balances_adds_only_new(monkeypatch):
     assert called
 
 
+def test_check_new_balances_updates_average(monkeypatch):
+    module = importlib.reload(bot_module)
+
+    class BalClient(DummyClient):
+        async def get_account(self):
+            return {"balances": [{"asset": "BTC", "free": "2", "locked": "0"}]}
+
+        async def get_symbol_info(self, symbol):
+            return {
+                "filters": [
+                    {"filterType": "LOT_SIZE", "minQty": "0.0001", "stepSize": "0.0001"},
+                    {"filterType": "MIN_NOTIONAL", "minNotional": "5"},
+                ]
+            }
+
+        async def get_my_trades(self, symbol, limit=1000, fromId=None):
+            return [
+                {"qty": "1", "price": "1000", "isBuyer": True, "id": 1},
+                {"qty": "1", "price": "2000", "isBuyer": True, "id": 2},
+            ]
+
+        async def get_symbol_ticker(self, symbol):
+            return {"price": "2000"}
+
+    bot = module.SellBot(BalClient())
+    bot.bsm = object()
+    tracker = module.FifoTracker()
+    tracker.add_trade(1, 1000)
+    bot.positions["BTCUSDT"] = module.Position(tracker, 0.0001, 5)
+    asyncio.run(bot.check_new_balances())
+    avg = bot.positions["BTCUSDT"].tracker.average_price()
+    assert abs(avg - 1500) < 1e-8
+
+
 def test_should_sell_triggers_stop_loss(monkeypatch):
     monkeypatch.setenv("STOP_LOSS_ENABLED", "true")
     import bot.sell_bot as bot_module
