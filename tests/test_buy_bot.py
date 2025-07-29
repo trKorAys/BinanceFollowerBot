@@ -294,6 +294,13 @@ def test_skip_buy_if_recent(tmp_path, monkeypatch):
         called["buy"] += 1
 
     monkeypatch.setattr(bot, "execute_buy", fake_execute)
+    select_calls = {"cnt": 0}
+
+    async def fake_select_rsi(self):
+        select_calls["cnt"] += 1
+        return None
+
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select_rsi)
 
     now = datetime.now(timezone.utc)
     bot.last_buy_times["ABCUSDT"] = now - timedelta(hours=1)
@@ -301,11 +308,13 @@ def test_skip_buy_if_recent(tmp_path, monkeypatch):
     bot.top_symbols = ["ABCUSDT"]
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
     assert called["buy"] == 0
+    assert select_calls["cnt"] == 1
     assert "ABCUSDT" not in bot.top_symbols
 
     bot.last_buy_times["ABCUSDT"] = now - timedelta(hours=3)
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
     assert called["buy"] == 1
+    assert select_calls["cnt"] == 1
 
     bot.loss_check_enabled = True
     bot.last_buy_times["ABCUSDT"] = now - timedelta(hours=1)
@@ -328,16 +337,25 @@ def test_skip_buy_if_recent_sell(tmp_path, monkeypatch):
         called["buy"] += 1
 
     monkeypatch.setattr(bot, "execute_buy", fake_execute)
+    select_calls = {"cnt": 0}
+
+    async def fake_select_rsi(self):
+        select_calls["cnt"] += 1
+        return None
+
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select_rsi)
 
     now = datetime.now(timezone.utc)
     bot.last_sell_times["ABCUSDT"] = now - timedelta(hours=1)
     bot.loss_check_enabled = False
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
     assert called["buy"] == 0
+    assert select_calls["cnt"] == 1
 
     bot.last_sell_times["ABCUSDT"] = now - timedelta(hours=3)
     asyncio.run(bot._execute_cycle(("ABCUSDT", 1.0), 10))
     assert called["buy"] == 1
+    assert select_calls["cnt"] == 1
 
 
 def test_recent_buy_persistence(tmp_path, monkeypatch):

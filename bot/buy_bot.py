@@ -682,19 +682,28 @@ class BuyBot:
         if usdt_amount < MIN_LOSER_USDT:
             log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
             return
-        symbol, _ = candidate
-        now = datetime.now(timezone.utc)
-        last = self.last_buy_times.get(symbol)
-        if not self.loss_check_enabled and last and now - last < timedelta(hours=2):
-            log(f"{symbol} son iki saat icinde alindi, atlandi")
-            if symbol in self.top_symbols:
-                self.top_symbols.remove(symbol)
-            return
-        last_sell = self.last_sell_times.get(symbol)
-        if not self.loss_check_enabled and last_sell and now - last_sell < timedelta(hours=2):
-            log(f"{symbol} son iki saat icinde satildi, atlandi")
-            return
-        await self.execute_buy(symbol, usdt_amount, check_loss=self.loss_check_enabled)
+        while candidate:
+            symbol, _ = candidate
+            now = datetime.now(timezone.utc)
+            if not self.loss_check_enabled:
+                last = self.last_buy_times.get(symbol)
+                if last and now - last < timedelta(hours=2):
+                    log(f"{symbol} son iki saat icinde alindi, atlandi")
+                    if symbol in self.top_symbols:
+                        self.top_symbols.remove(symbol)
+                    candidate = await self.select_rsi_keltner()
+                    continue
+                last_sell = self.last_sell_times.get(symbol)
+                if last_sell and now - last_sell < timedelta(hours=2):
+                    log(f"{symbol} son iki saat icinde satildi, atlandi")
+                    if symbol in self.top_symbols:
+                        self.top_symbols.remove(symbol)
+                    candidate = await self.select_rsi_keltner()
+                    continue
+            await self.execute_buy(symbol, usdt_amount, check_loss=self.loss_check_enabled)
+            break
+        if not candidate:
+            log("Uygun sembol bulunamadi")
 
     async def run(self):
         if self.api_down:
