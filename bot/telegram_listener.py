@@ -3,9 +3,9 @@ import asyncio
 from threading import Thread
 from telegram.ext import Updater, CommandHandler
 
-from .sell_bot import send_telegram
-from .utils import log
-from .messages import t
+from bot.sell_bot import send_telegram
+from bot.utils import log
+from bot.messages import t
 
 
 
