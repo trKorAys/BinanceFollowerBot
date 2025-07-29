@@ -3,22 +3,20 @@ import os
 # Bu dosya çalıştırıldığında ortam zorla mainnete ayarlanır
 os.environ["BINANCE_TESTNET"] = "false"
 
-from .utils import log, setup_telegram_menu, load_env
+from bot.utils import log, setup_telegram_menu, load_env
 load_env()
 
 import asyncio
 from binance import AsyncClient
 
-from .buy_bot import BuyBot
-from .sell_bot import SellBot, send_telegram, CHECK_INTERVAL
-from .telegram_listener import start_listener
+from bot.buy_bot import BuyBot
+from bot.sell_bot import SellBot, send_telegram, CHECK_INTERVAL
+from bot.telegram_listener import start_listener
 
 TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
 
-
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
-
 
 async def main():
     log("Mainnet botu baslatiliyor")
