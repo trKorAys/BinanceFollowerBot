@@ -4,6 +4,7 @@ import os
 import time
 import math
 import sqlite3
+import numpy as np
 from .utils import (
     FifoTracker,
     get_current_utc_iso,
@@ -51,6 +52,38 @@ BUY_DB_PATH = os.getenv("BUY_DB_PATH", "buy.db")
 STOP_LOSS_ENABLED = os.getenv("STOP_LOSS_ENABLED", "false").lower() == "true"
 ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
 STOP_LOSS_MULTIPLIER = float(os.getenv("STOP_LOSS_MULTIPLIER", "1.0"))
+
+
+def _ema(values, period):
+    arr = np.array(values, dtype=float)
+    if len(arr) == 0:
+        return arr
+    alpha = 2 / (period + 1)
+    ema = [arr[0]]
+    for v in arr[1:]:
+        ema.append((v - ema[-1]) * alpha + ema[-1])
+    return np.array(ema)
+
+
+def _atr(highs, lows, closes, period=14):
+    highs = np.array(highs, dtype=float)
+    lows = np.array(lows, dtype=float)
+    closes = np.array(closes, dtype=float)
+    trs = [highs[0] - lows[0]]
+    for i in range(1, len(closes)):
+        high_low = highs[i] - lows[i]
+        high_close = abs(highs[i] - closes[i - 1])
+        low_close = abs(lows[i] - closes[i - 1])
+        trs.append(max(high_low, high_close, low_close))
+    return _ema(trs, period)
+
+
+def _keltner(highs, lows, closes, period_ema=20, period_atr=10, mult=1.5):
+    ema = _ema(closes, period_ema)
+    atr = _atr(highs, lows, closes, period_atr)
+    upper = ema + atr * mult
+    lower = ema - atr * mult
+    return upper, lower
 
 def send_telegram(text: str, chat_id: Optional[str] = None, force: bool = False) -> None:
     """Telegram'a SellBot adıyla Markdown formatında mesaj gönder."""
@@ -691,6 +724,10 @@ class SellBot:
             log("API hatası devam ediyor, kontrol atlandı")
             return
         await self.sync_time()
+        if await self.is_btc_below_sma99():
+            log("BTC SMA99 altinda, tum pozisyonlar satiliyor")
+            await self.sell_all_positions()
+            return
         items = list(self.positions.items())
         if not items:
             return
@@ -746,6 +783,23 @@ class SellBot:
         except Exception:
             return 0.0
 
+    async def get_keltner_upper(self, symbol: str) -> Optional[float]:
+        """Son kapanan mumlar icin ust Keltner bandini dondur."""
+        try:
+            limit = 21
+            klines = await self.client.get_klines(
+                symbol=symbol, interval=CANDLE_INTERVAL, limit=limit
+            )
+            if len(klines) < limit:
+                return None
+            highs = [float(k[2]) for k in klines[:-1]]
+            lows = [float(k[3]) for k in klines[:-1]]
+            closes = [float(k[4]) for k in klines[:-1]]
+            upper, _ = _keltner(highs, lows, closes)
+            return float(upper[-1]) if len(upper) else None
+        except Exception:
+            return None
+
     async def is_btc_above_sma7(self) -> bool:
         """BTC fiyatinin 7 gunluk SMA uzerinde olup olmadigini kontrol et."""
         try:
@@ -757,6 +811,26 @@ class SellBot:
             ticker = await self.client.get_symbol_ticker(symbol="BTCUSDT")
             price = float(ticker["price"])
             return price > sma
+        except Exception:
+            return False
+
+    async def is_btc_below_sma99(self) -> bool:
+        """BTC son kapali 15m mumu SMA99 gunluk altinda mi?"""
+        try:
+            klines = await self.client.get_klines(
+                symbol="BTCUSDT", interval="1d", limit=99
+            )
+            if len(klines) < 99:
+                return False
+            closes = [float(k[4]) for k in klines]
+            sma = sum(closes) / len(closes)
+            m15 = await self.client.get_klines(
+                symbol="BTCUSDT", interval="15m", limit=2
+            )
+            if len(m15) < 2:
+                return False
+            last_close = float(m15[-2][4])
+            return last_close < sma
         except Exception:
             return False
 
@@ -778,6 +852,10 @@ class SellBot:
             return False
         if avg_price == 0:
             log(f"{symbol} ortalama fiyat sifir, satis onceligi")
+            return True
+        upper_band = await self.get_keltner_upper(symbol)
+        if upper_band is not None and last_price > upper_band:
+            log(f"{symbol} fiyat ust Keltner bandinda, satis yapilacak")
             return True
         if STOP_LOSS_ENABLED:
             atr = await self.calculate_atr(symbol)
@@ -887,6 +965,15 @@ class SellBot:
         except BinanceAPIException as exc:
             log(f"{symbol} satış hatası: {exc}")
             send_telegram(t("sell_error", exc=exc))
+
+    async def sell_all_positions(self) -> None:
+        """Tum pozisyonlari hemen sat."""
+        items = list(self.positions.items())
+        for symbol, pos in items:
+            try:
+                await self.execute_sell(symbol, pos.tracker.total_qty())
+            except Exception as exc:  # pragma: no cover - API hatasi
+                log(f"{symbol} toplu satis hatasi: {exc}")
 
 async def main():
     log("Bot başlatılıyor")

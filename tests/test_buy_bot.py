@@ -68,10 +68,10 @@ def test_select_symbols_fallback(monkeypatch):
 
     dummy = DummyClient()
     bot_instance = buy_bot.BuyBot(dummy)
-    monkeypatch.setattr(buy_bot, "meets_buy_conditions", lambda *a: True)
+    monkeypatch.setattr(buy_bot, "meets_rsi_keltner", lambda *a: True)
     bot_instance.top_symbols = [f"S{i}USDT" for i in range(80)]
     monkeypatch.setattr(buy_bot.BuyBot, "update_top_symbols", lambda self: None)
-    result = asyncio.run(bot_instance.select_symbol())
+    result = asyncio.run(bot_instance.select_rsi_keltner())
     assert result == ("S0USDT", 1.0)
 
 
@@ -107,11 +107,11 @@ def test_ensure_testnet_balance(monkeypatch):
 def test_select_symbols_ignores_open_candle(monkeypatch):
     recorded = {}
 
-    def fake_meets(opens, highs, lows, closes, volumes):
+    def fake_meets(highs, lows, closes):
         recorded["last"] = closes[-1]
         return True
 
-    monkeypatch.setattr(buy_bot, "meets_buy_conditions", fake_meets)
+    monkeypatch.setattr(buy_bot, "meets_rsi_keltner", fake_meets)
 
     class DummyClient:
         async def get_exchange_info(self):
@@ -135,30 +135,30 @@ def test_select_symbols_ignores_open_candle(monkeypatch):
     bot_instance = buy_bot.BuyBot(dummy)
     bot_instance.top_symbols = ["ABCUSDT"]
     monkeypatch.setattr(buy_bot.BuyBot, "update_top_symbols", lambda self: None)
-    result = asyncio.run(bot_instance.select_symbol())
+    result = asyncio.run(bot_instance.select_rsi_keltner())
     assert recorded["last"] != 99
     assert result == ("ABCUSDT", 1.0)
 
 
-def test_select_sma_cross(monkeypatch):
-    buy_bot.SMA_PERIOD = 3
-    buy_bot.LONG_SMA_PERIOD = 5
+def test_meets_rsi_keltner_bool():
+    highs = [1.1] * 60
+    lows = [0.9] * 60
+    closes = [1 - i * 0.01 for i in range(60)]
+    assert isinstance(buy_bot.meets_rsi_keltner(highs, lows, closes), bool)
 
+
+def test_is_btc_above_sma99_bool():
     class DummyClient:
-        async def get_exchange_info(self):
-            return {"symbols": [{"symbol": "AAAUSDT", "quoteAsset": "USDT", "status": "TRADING"}]}
+        async def get_klines(self, symbol, interval="1d", limit=99):
+            if interval == "1d":
+                return [[0, 0, 0, 0, "2", 0, 0, 0, 0, 0, "0", "0"]] * 99
+            return [
+                [0, 0, 0, 0, "1", 0, 0, 0, 0, 0, "0", "0"],
+                [0, 0, 0, 0, "3", 0, 0, 0, 0, 0, "0", "0"],
+            ]
 
-        async def get_klines(self, symbol, interval="15m", limit=9):
-            closes = [2, 2, 2, 2, 2, 1, 1, 0.5, 2]
-            data = [[0, "1", "1", "1", str(c), "1", 0, 0, 0, 0, "0", "0"] for c in closes]
-            data.append([0, "1", "1", "1", "1", "1", 0, 0, 0, 0, "0", "0"])  # açık mum
-            return data
-
-    bot_instance = buy_bot.BuyBot(DummyClient())
-    bot_instance.top_symbols = ["AAAUSDT"]
-    monkeypatch.setattr(buy_bot.BuyBot, "update_top_symbols", lambda self: None)
-    result = asyncio.run(bot_instance.select_sma_cross())
-    assert result == ("AAAUSDT", 2.0)
+    bot = buy_bot.BuyBot(DummyClient())
+    assert isinstance(asyncio.run(bot.is_btc_above_sma99()), bool)
 
 
 def test_notify_buy_utf8(monkeypatch):
@@ -236,7 +236,7 @@ def test_run_skips_when_usdt_low(monkeypatch):
 
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_symbol", fake_select)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
     asyncio.run(bot.run())
     assert called["select"] is False
 
@@ -607,8 +607,7 @@ def test_run_logs_balance(monkeypatch):
 
     monkeypatch.setattr(buy_bot, "log", lambda msg: logs.append(msg))
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_symbol", fake_select)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_sma_cross", fake_select)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
     monkeypatch.setattr(buy_bot.BuyBot, "_execute_cycle", fake_cycle)
 
     bot = buy_bot.BuyBot(DummyClient())
@@ -744,7 +743,7 @@ def test_run_prefers_loser(monkeypatch):
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
     monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_loser)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_symbol", fake_select)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
     monkeypatch.setattr(buy_bot.BuyBot, "_execute_cycle", fake_cycle)
     asyncio.run(bot.run())
     assert recorded.get("symbol") == "LOSSUSDT"
@@ -767,12 +766,43 @@ def test_run_logs_strategies(monkeypatch):
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
     monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_none)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_symbol", fake_none)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_sma_cross", fake_none)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_none)
+    async def fake_btc(self):
+        return True
+
+    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma99", fake_btc)
     asyncio.run(bot.run())
     assert any("Zarar stratejisi" in m for m in logs)
-    assert any("Beşli Doğrulama Alım Stratejisi" in m for m in logs)
-    assert any("SMA stratejisi" in m for m in logs)
+    assert any("RSI-Keltner stratejisi" in m for m in logs)
+
+
+def test_run_skips_when_btc_below(monkeypatch):
+    class DummyClient:
+        async def get_asset_balance(self, asset="USDT"):
+            return {"free": "10"}
+
+    async def fake_sync(self):
+        pass
+
+    async def fake_none(self):
+        return None
+
+    called = {"select": False}
+
+    async def fake_select(self):
+        called["select"] = True
+        return None
+
+    async def fake_btc(self):
+        return False
+
+    bot = buy_bot.BuyBot(DummyClient())
+    monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_none)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
+    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma99", fake_btc)
+    asyncio.run(bot.run())
+    assert called["select"] is False
 
 
 def test_send_telegram_prefix(monkeypatch):
@@ -848,8 +878,7 @@ def test_start_message_once(monkeypatch):
     monkeypatch.setattr(module.BuyBot, "check_api", fake_check)
     monkeypatch.setattr(module.BuyBot, "sync_time", fake_sync)
     monkeypatch.setattr(module.BuyBot, "select_loser", fake_select_loser)
-    monkeypatch.setattr(module.BuyBot, "select_symbol", fake_select_symbol)
-    monkeypatch.setattr(module.BuyBot, "select_sma_cross", fake_select_symbol)
+    monkeypatch.setattr(module.BuyBot, "select_rsi_keltner", fake_select_symbol)
     monkeypatch.setattr(module.BuyBot, "monitor_api", fake_monitor)
     monkeypatch.setattr(module.BuyBot, "update_top_symbols", fake_update)
     monkeypatch.setattr(module.BuyBot, "symbols_update_loop", fake_loop)
