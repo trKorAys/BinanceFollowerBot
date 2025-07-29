@@ -5,7 +5,7 @@ import time
 import math
 import sqlite3
 import numpy as np
-from .utils import (
+from bot.utils import (
     FifoTracker,
     get_current_utc_iso,
     log,
@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 import requests
 from binance.exceptions import BinanceAPIException
-from .messages import t
+from bot.messages import t
 
 load_env()
 
