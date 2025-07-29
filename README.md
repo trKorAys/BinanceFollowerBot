@@ -22,7 +22,7 @@ A Python-based bot that monitors your Binance account and automatically sells wh
 - Timestamps are kept in **UTC‑0** on the backend and shown in your browser time zone.
 - Recently bought symbols are stored with a UTC timestamp and skipped for two hours.
 - Recently sold symbols are also remembered and skipped for two hours.
-- Her döngüde bakiye kontrolü yapılarak yeni alınan coinler otomatik olarak takibe eklenir ve mevcut pozisyonların ortalama maliyeti güncellenir.
+- Cüzdan bakiyesi her saatin **55. dakikasında** kontrol edilir; yeni alınan coinler takibe eklenir ve mevcut pozisyonların ortalama maliyeti güncellenir.
 - Symbols skipped because of a recent buy are removed from the volume list until it refreshes.
 - Target prices are printed whenever updated and instantaneous targets are shown on price changes.
 - When BTC is above the 7-period SMA on the 15-minute chart and the last closed candle opened higher than your average buy price, targets are calculated from that opening price.
