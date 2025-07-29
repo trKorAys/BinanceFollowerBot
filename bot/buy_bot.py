@@ -13,7 +13,7 @@ except Exception:  # pragma: no cover - talib is optional in tests
     talib = None
 
 from binance import AsyncClient
-from .utils import (
+from bot.utils import (
     FifoTracker,
     extract_min_notional,
     extract_min_qty,
@@ -23,7 +23,7 @@ from .utils import (
     seconds_until_next_six_hour,
     load_env,
 )
-from .messages import t
+from bot.messages import t
 
 load_env()
 
