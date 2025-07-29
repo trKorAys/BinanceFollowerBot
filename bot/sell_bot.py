@@ -743,10 +743,13 @@ class SellBot:
         now = datetime.now(timezone.utc)
         if now.minute == 55:
             await self.check_new_balances()
-        if await self.is_btc_below_sma99():
-            log("BTC SMA99 altinda, tum pozisyonlar satiliyor")
-            await self.sell_all_positions()
-            return
+        if await self.is_btc_below_sma25():
+            if STOP_LOSS_ENABLED:
+                log("BTC SMA25 altinda, tum pozisyonlar satiliyor")
+                await self.sell_all_positions()
+                return
+            else:
+                log("BTC SMA25 altinda ancak stop loss devre disi")
         items = list(self.positions.items())
         if not items:
             return
@@ -833,16 +836,16 @@ class SellBot:
         except Exception:
             return False
 
-    async def is_btc_below_sma99(self) -> bool:
-        """BTC son kapanmış 15m mumu, 99 periyotluk 15m SMA'nın altında mı?"""
+    async def is_btc_below_sma25(self) -> bool:
+        """BTC son kapanmış 15m mumu, 25 periyotluk 15m SMA'nın altında mı?"""
         try:
             klines = await self.client.get_klines(
-                symbol="BTCUSDT", interval="15m", limit=100
+                symbol="BTCUSDT", interval="15m", limit=26
             )
-            if len(klines) < 100:
+            if len(klines) < 26:
                 return False
-            closes = [float(k[4]) for k in klines[:-1]]
-            sma = sum(closes[-99:]) / 99
+            closes = [float(k[4]) for k in klines[-26:-1]]
+            sma = sum(closes[-25:]) / 25
             last_close = float(klines[-2][4])
             return last_close < sma
         except Exception:

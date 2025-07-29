@@ -135,18 +135,15 @@ def test_meets_rsi_keltner_bool():
     assert isinstance(buy_bot.meets_rsi_keltner(highs, lows, closes), bool)
 
 
-def test_is_btc_above_sma99_bool():
+def test_is_btc_above_sma25_bool():
     class DummyClient:
-        async def get_klines(self, symbol, interval="1d", limit=99):
-            if interval == "1d":
-                return [[0, 0, 0, 0, "2", 0, 0, 0, 0, 0, "0", "0"]] * 99
+        async def get_klines(self, symbol, interval="15m", limit=26):
             return [
                 [0, 0, 0, 0, "1", 0, 0, 0, 0, 0, "0", "0"],
-                [0, 0, 0, 0, "3", 0, 0, 0, 0, 0, "0", "0"],
-            ]
+            ] * 26
 
     bot = buy_bot.BuyBot(DummyClient())
-    assert isinstance(asyncio.run(bot.is_btc_above_sma99()), bool)
+    assert isinstance(asyncio.run(bot.is_btc_above_sma25()), bool)
 
 
 def test_notify_buy_utf8(monkeypatch):
@@ -221,6 +218,9 @@ def test_run_skips_when_usdt_low(monkeypatch):
     async def fake_select(self):
         called["select"] = True
         return None
+
+    async def fake_empty(self):
+        return []
 
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
@@ -626,7 +626,7 @@ def test_run_logs_balance(monkeypatch):
     )
 
 
-def test_select_loser(monkeypatch):
+def test_select_losers(monkeypatch):
     class DummyClient:
         def __init__(self):
             self.trades = {
@@ -655,11 +655,11 @@ def test_select_loser(monkeypatch):
             return []
 
     bot = buy_bot.BuyBot(DummyClient())
-    result = asyncio.run(bot.select_loser())
-    assert result[0] == "AUSDT"
+    result = asyncio.run(bot.select_losers())
+    assert result[0][0] == "AUSDT"
 
 
-def test_select_loser_none(monkeypatch):
+def test_select_losers_none(monkeypatch):
     class DummyClient:
         async def get_account(self):
             return {
@@ -681,11 +681,11 @@ def test_select_loser_none(monkeypatch):
             return []
 
     bot = buy_bot.BuyBot(DummyClient())
-    result = asyncio.run(bot.select_loser())
-    assert result[0] == "AUSDT"
+    result = asyncio.run(bot.select_losers())
+    assert result[0][0] == "AUSDT"
 
 
-def test_select_loser_min_qty(monkeypatch):
+def test_select_losers_min_qty(monkeypatch):
     class DummyClient:
         async def get_account(self):
             return {"balances": [{"asset": "A", "free": "0.5", "locked": "0"}]}
@@ -702,11 +702,11 @@ def test_select_loser_min_qty(monkeypatch):
             return []
 
     bot = buy_bot.BuyBot(DummyClient())
-    result = asyncio.run(bot.select_loser())
-    assert result is None
+    result = asyncio.run(bot.select_losers())
+    assert result == []
 
 
-def test_select_loser_value_skip(monkeypatch):
+def test_select_losers_value_skip(monkeypatch):
     class DummyClient:
         async def get_account(self):
             return {"balances": [{"asset": "A", "free": "1", "locked": "0"}]}
@@ -723,8 +723,8 @@ def test_select_loser_value_skip(monkeypatch):
             return []
 
     bot = buy_bot.BuyBot(DummyClient())
-    result = asyncio.run(bot.select_loser())
-    assert result is None
+    result = asyncio.run(bot.select_losers())
+    assert result == []
 
 
 def test_run_prefers_loser(monkeypatch):
@@ -743,14 +743,17 @@ def test_run_prefers_loser(monkeypatch):
 
     recorded = {}
 
-    async def fake_cycle(self, candidate, usdt):
-        recorded["symbol"] = candidate[0]
+    async def fake_weighted(self, candidates, usdt):
+        recorded["symbol"] = candidates[0][0]
+
+    async def fake_losers(self):
+        return [("LOSSUSDT", 1.0, 5.0)]
 
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_loser)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_losers", fake_losers)
     monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
-    monkeypatch.setattr(buy_bot.BuyBot, "_execute_cycle", fake_cycle)
+    monkeypatch.setattr(buy_bot.BuyBot, "_execute_weighted_losers", fake_weighted)
     asyncio.run(bot.run())
     assert recorded.get("symbol") == "LOSSUSDT"
 
@@ -771,12 +774,15 @@ def test_run_logs_strategies(monkeypatch):
     monkeypatch.setattr(buy_bot, "log", lambda m: logs.append(m))
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_none)
+    async def fake_empty(self):
+        return []
+
+    monkeypatch.setattr(buy_bot.BuyBot, "select_losers", fake_empty)
     monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_none)
     async def fake_btc(self):
         return True
 
-    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma99", fake_btc)
+    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma25", fake_btc)
     asyncio.run(bot.run())
     assert any("Zarar stratejisi" in m for m in logs)
     assert any("RSI-Keltner stratejisi" in m for m in logs)
@@ -802,11 +808,14 @@ def test_run_skips_when_btc_below(monkeypatch):
     async def fake_btc(self):
         return False
 
+    async def fake_empty(self):
+        return []
+
     bot = buy_bot.BuyBot(DummyClient())
     monkeypatch.setattr(buy_bot.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(buy_bot.BuyBot, "select_loser", fake_none)
+    monkeypatch.setattr(buy_bot.BuyBot, "select_losers", fake_empty)
     monkeypatch.setattr(buy_bot.BuyBot, "select_rsi_keltner", fake_select)
-    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma99", fake_btc)
+    monkeypatch.setattr(buy_bot.BuyBot, "is_btc_above_sma25", fake_btc)
     asyncio.run(bot.run())
     assert called["select"] is False
 
@@ -862,8 +871,8 @@ def test_start_message_once(monkeypatch):
     async def fake_sync(self):
         pass
 
-    async def fake_select_loser(self):
-        return None
+    async def fake_select_losers(self):
+        return []
 
     async def fake_select_symbol(self):
         return None
@@ -883,7 +892,7 @@ def test_start_message_once(monkeypatch):
     monkeypatch.setattr(module.BuyBot, "run", fake_run)
     monkeypatch.setattr(module.BuyBot, "check_api", fake_check)
     monkeypatch.setattr(module.BuyBot, "sync_time", fake_sync)
-    monkeypatch.setattr(module.BuyBot, "select_loser", fake_select_loser)
+    monkeypatch.setattr(module.BuyBot, "select_losers", fake_select_losers)
     monkeypatch.setattr(module.BuyBot, "select_rsi_keltner", fake_select_symbol)
     monkeypatch.setattr(module.BuyBot, "monitor_api", fake_monitor)
     monkeypatch.setattr(module.BuyBot, "update_top_symbols", fake_update)

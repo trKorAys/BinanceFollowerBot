@@ -744,7 +744,8 @@ def test_check_positions_groups(monkeypatch):
     assert called == ["S2USDT"]
 
 
-def test_btc_sma99_stop(monkeypatch):
+def test_btc_sma25_stop(monkeypatch):
+    monkeypatch.setenv("STOP_LOSS_ENABLED", "true")
     module = importlib.reload(bot_module)
 
     class Dummy(DummyClient):
@@ -771,7 +772,7 @@ def test_btc_sma99_stop(monkeypatch):
     async def fake_btc(self):
         return True
 
-    monkeypatch.setattr(module.SellBot, "is_btc_below_sma99", fake_btc)
+    monkeypatch.setattr(module.SellBot, "is_btc_below_sma25", fake_btc)
     async def fake_sync(self):
         pass
 

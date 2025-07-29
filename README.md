@@ -51,3 +51,11 @@ Projede yer alan testleri çalıştırmak için:
 ```bash
 pytest -q
 ```
+
+## Değişiklikler
+
+- `is_btc_above_sma99` fonksiyonunun adı `is_btc_above_sma25` olarak değiştirildi.
+- Bitcoin fiyatı için 15 dakikalık SMA 25 değeri kontrol ediliyor ve sadece bu seviye üzerindeyse alım yapılıyor.
+- `is_btc_below_sma99` fonksiyonunun adı `is_btc_below_sma25` olarak güncellendi ve 15 dakikalık SMA 25 değeri kullanılıyor. `check_positions` fonksiyonu bu değerin altına inilirse ve `STOP_LOSS_ENABLED` değişkeni `true` ise tüm pozisyonları satıyor.
+- Zarar stratejisi artık koşulu sağlayan tüm sembollerde kayıp miktarına orantılı alım yapıyor.
+- Arka plandaki tüm zaman hesaplamaları UTC‑0 üzerinde yapılır, arayüzlerde cihaz saat dilimi kullanılır.
