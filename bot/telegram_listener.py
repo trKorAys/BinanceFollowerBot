@@ -1,7 +1,14 @@
 import os
 import asyncio
 from threading import Thread
-from telegram.ext import Updater, CommandHandler
+try:  # pragma: no cover - optional dependency
+    from telegram.ext import Updater, CommandHandler
+except Exception:  # pragma: no cover - library not installed
+    Updater = None
+    class CommandHandler:  # type: ignore
+        def __init__(self, command, callback):
+            self.command = [command]
+            self.callback = callback
 
 from bot.sell_bot import send_telegram
 from bot.utils import log
@@ -34,6 +41,9 @@ def start_listener(loop: asyncio.AbstractEventLoop, sell_bot=None, buy_bot=None)
     telegram_enabled = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
     if not telegram_enabled:
         log("Telegram devre disi, listener baslatilmadi")
+        return
+    if Updater is None:
+        log("Telegram kutuphaneleri yuklenemedi, listener baslatilmadi")
         return
     token = os.getenv("TELEGRAM_TOKEN")
     if not token:
