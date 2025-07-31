@@ -43,20 +43,21 @@ python -m bot.mainnet_bot    # Gerçek ortamda her ikisi
 Çıkmak için `deactivate` komutunu kullanabilirsiniz.
 
 Fiyat üst Keltner bandına ulaştığında:
-- Kar **pozitifse** bot pozisyonu hemen satar.
-- Kar **negatifse** satış sadece `STOP_LOSS_ENABLED=true` ise gerçekleşir.
+- Son 5 dakikalık satış hacmi alış hacminden yüksek **ve** fiyat önceden belirlenen hedefin üzerindeyse pozisyon satılır.
+- Kar **negatifse** ve `STOP_LOSS_ENABLED=true` ise hacim kontrolüne bakılmadan satış yapılır.
 
 ## Zaman Dilimi
 
 Backend tarafında bütün zaman bilgileri **UTC‑0** olarak tutulur. Loglar ve Telegram mesajları `LOCAL_TIMEZONE` değişkeni tanımlıysa bu değere, aksi halde sistem saat dilimine çevrilerek gösterilir. Tarayıcı tabanlı arayüzlerde zamanlar cihazın saat dilimine göre gösterilir.
+Hacim hesaplamaları gibi süreye dayalı tüm kontroller de UTC‑0 üzerinden yapılır.
 
 ## Değişiklikler
 
-- Üst Keltner bandı kuralı güncellendi: kar pozitifse direkt satış, kar negatifse stop-loss aktifse satış.
+- Üst Keltner bandı kuralı geliştirildi: fiyat bandı aşıldığında son 5 dakikalık hacim analizi yapılır; satış hacmi alış hacminden büyük ve fiyat hedefi geçiyorsa satış tetiklenir.
 
 ## Planlananlar
 
-- Keltner bandı eşiği ve stop-loss parametreleri için daha esnek yapılandırma seçenekleri.
+- Keltner bandı eşiği, hacim periyodu ve stop-loss parametreleri için daha esnek yapılandırma seçenekleri.
 
 ## Testler
 

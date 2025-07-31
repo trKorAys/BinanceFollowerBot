@@ -17,7 +17,7 @@ from bot.utils import (
     load_env,
 )
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from datetime import datetime, timezone
 
 import requests
@@ -861,6 +861,28 @@ class SellBot:
         except Exception:
             return None
 
+    async def get_recent_volumes(self, symbol: str, minutes: int = 5) -> Tuple[float, float]:
+        """Belirtilen sembol için son `minutes` dakikadaki alış ve satış hacimlerini döndür."""
+        try:
+            end = int(datetime.now(timezone.utc).timestamp() * 1000)
+            start = end - minutes * 60 * 1000
+            trades = await self.client.get_aggregate_trades(
+                symbol=symbol, startTime=start, endTime=end
+            )
+            buy_vol = 0.0
+            sell_vol = 0.0
+            for t in trades:
+                price = float(t["p"])
+                qty = float(t["q"])
+                vol = price * qty
+                if t["m"]:
+                    sell_vol += vol
+                else:
+                    buy_vol += vol
+            return buy_vol, sell_vol
+        except Exception:
+            return 0.0, 0.0
+
     async def should_sell(self, symbol: str, last_price: float, avg_price: float) -> bool:
         vol = await self.get_volatility(symbol)
         base = FEE_BUY + FEE_SELL + MIN_PROFIT
@@ -873,19 +895,23 @@ class SellBot:
         profit_ratio = (last_price - avg_price) / avg_price if avg_price else 0
         upper_band = await self.get_keltner_upper(symbol)
         if upper_band is not None and last_price > upper_band:
-            if profit_ratio >= 0:
-                log(
-                    f"{symbol} fiyat ust Keltner bandinda, kar pozitif, satis yapilacak"
-                )
+            buy_vol, sell_vol = await self.get_recent_volumes(symbol)
+            target_price = avg_price * (1 + FEE_BUY + FEE_SELL + MIN_PROFIT)
+            decision = sell_vol > buy_vol and last_price > target_price
+            log(
+                f"{symbol} Keltner ust bant hacim kontrolu: satis={sell_vol:.4f}, "
+                f"alim={buy_vol:.4f}, hedef={target_price:.8f}, fiyat={last_price:.8f}, karar={decision}"
+            )
+            if decision:
                 return True
-            elif STOP_LOSS_ENABLED:
+            if profit_ratio < 0 and STOP_LOSS_ENABLED:
                 log(
-                    f"{symbol} fiyat ust Keltner bandinda, kar negatif ve stop-loss aktif, satis yapilacak"
+                    f"{symbol} Keltner ust bandinda, kar negatif ve stop-loss aktif, satis yapilacak"
                 )
                 return True
             else:
                 log(
-                    f"{symbol} fiyat ust Keltner bandinda, kar negatif ve stop-loss pasif, satis yapilmayacak"
+                    f"{symbol} Keltner ust bandi asildi ancak hacim veya hedef kosullari saglanmadi"
                 )
         if STOP_LOSS_ENABLED:
             atr = await self.calculate_atr(symbol)
