@@ -870,10 +870,23 @@ class SellBot:
         if avg_price == 0:
             log(f"{symbol} ortalama fiyat sifir, satis onceligi")
             return True
+        profit_ratio = (last_price - avg_price) / avg_price if avg_price else 0
         upper_band = await self.get_keltner_upper(symbol)
         if upper_band is not None and last_price > upper_band:
-            log(f"{symbol} fiyat ust Keltner bandinda, satis yapilacak")
-            return True
+            if profit_ratio >= 0:
+                log(
+                    f"{symbol} fiyat ust Keltner bandinda, kar pozitif, satis yapilacak"
+                )
+                return True
+            elif STOP_LOSS_ENABLED:
+                log(
+                    f"{symbol} fiyat ust Keltner bandinda, kar negatif ve stop-loss aktif, satis yapilacak"
+                )
+                return True
+            else:
+                log(
+                    f"{symbol} fiyat ust Keltner bandinda, kar negatif ve stop-loss pasif, satis yapilmayacak"
+                )
         if STOP_LOSS_ENABLED:
             atr = await self.calculate_atr(symbol)
             stop_price = avg_price - atr * STOP_LOSS_MULTIPLIER

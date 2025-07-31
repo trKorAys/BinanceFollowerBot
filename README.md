@@ -25,6 +25,7 @@ Bu bot, Binance API üzerinden alım satım işlemlerini takip etmenize yardımc
 - `BINANCE_TESTNET` (true/false)
 - `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`
 - `LOCAL_TIMEZONE` (örn. `Europe/Istanbul`)
+- `STOP_LOSS_ENABLED` (true/false)
 
 Tüm değişkenler için `.env.example` dosyasına bakabilirsiniz.
 
@@ -41,9 +42,21 @@ python -m bot.mainnet_bot    # Gerçek ortamda her ikisi
 
 Çıkmak için `deactivate` komutunu kullanabilirsiniz.
 
+Fiyat üst Keltner bandına ulaştığında:
+- Kar **pozitifse** bot pozisyonu hemen satar.
+- Kar **negatifse** satış sadece `STOP_LOSS_ENABLED=true` ise gerçekleşir.
+
 ## Zaman Dilimi
 
 Backend tarafında bütün zaman bilgileri **UTC‑0** olarak tutulur. Loglar ve Telegram mesajları `LOCAL_TIMEZONE` değişkeni tanımlıysa bu değere, aksi halde sistem saat dilimine çevrilerek gösterilir. Tarayıcı tabanlı arayüzlerde zamanlar cihazın saat dilimine göre gösterilir.
+
+## Değişiklikler
+
+- Üst Keltner bandı kuralı güncellendi: kar pozitifse direkt satış, kar negatifse stop-loss aktifse satış.
+
+## Planlananlar
+
+- Keltner bandı eşiği ve stop-loss parametreleri için daha esnek yapılandırma seçenekleri.
 
 ## Testler
 

@@ -1088,3 +1088,89 @@ def test_should_sell_triggers_stop_loss(monkeypatch):
     monkeypatch.setattr(module.SellBot, "get_volatility", fake_vol)
     decision = asyncio.run(watcher.should_sell("BTCUSDT", 95.0, 100.0))
     assert decision is True
+
+
+def test_should_sell_on_keltner_positive_profit(monkeypatch):
+    import bot.sell_bot as bot_module
+    bot_module.FEE_BUY = bot_module.FEE_SELL = bot_module.MIN_PROFIT = 0.0
+    bot_module.STOP_LOSS_ENABLED = False
+
+    class KClient(DummyClient):
+        async def get_recent_trades(self, symbol, limit=60):
+            return [
+                {"qty": "2", "isBuyerMaker": False},
+                {"qty": "1", "isBuyerMaker": True},
+            ]
+
+    watcher = bot_module.SellBot(KClient())
+    watcher.positions["BTCUSDT"] = bot_module.Position(bot_module.FifoTracker(), 0.0, 0.0)
+
+    async def fake_upper(self, _symbol):
+        return 100.0
+
+    async def fake_vol(*_args, **_kwargs):
+        return 0.0
+
+    async def fake_open(self, _symbol):
+        return None
+
+    monkeypatch.setattr(bot_module.SellBot, "get_keltner_upper", fake_upper)
+    monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
+    monkeypatch.setattr(bot_module.SellBot, "get_last_open_price", fake_open)
+
+    decision = asyncio.run(watcher.should_sell("BTCUSDT", 101.0, 100.0))
+    assert decision is True
+
+
+def test_should_not_sell_on_keltner_negative_without_stop(monkeypatch):
+    import bot.sell_bot as bot_module
+    bot_module.FEE_BUY = bot_module.FEE_SELL = bot_module.MIN_PROFIT = 0.0
+    bot_module.STOP_LOSS_ENABLED = False
+
+    watcher = bot_module.SellBot(DummyClient())
+    watcher.positions["BTCUSDT"] = bot_module.Position(bot_module.FifoTracker(), 0.0, 0.0)
+
+    async def fake_upper(self, _symbol):
+        return 100.0
+
+    async def fake_vol(*_args, **_kwargs):
+        return 0.0
+
+    async def fake_open(self, _symbol):
+        return None
+
+    monkeypatch.setattr(bot_module.SellBot, "get_keltner_upper", fake_upper)
+    monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
+    monkeypatch.setattr(bot_module.SellBot, "get_last_open_price", fake_open)
+
+    decision = asyncio.run(watcher.should_sell("BTCUSDT", 101.0, 102.0))
+    assert decision is False
+
+
+def test_should_sell_on_keltner_negative_with_stop(monkeypatch):
+    import bot.sell_bot as bot_module
+    bot_module.FEE_BUY = bot_module.FEE_SELL = bot_module.MIN_PROFIT = 0.0
+    bot_module.STOP_LOSS_ENABLED = True
+
+    watcher = bot_module.SellBot(DummyClient())
+    watcher.positions["BTCUSDT"] = bot_module.Position(bot_module.FifoTracker(), 0.0, 0.0)
+
+    async def fake_upper(self, _symbol):
+        return 100.0
+
+    async def fake_vol(*_args, **_kwargs):
+        return 0.0
+
+    async def fake_open(self, _symbol):
+        return None
+
+    async def fake_atr(self, _symbol):
+        return 0.0
+
+    monkeypatch.setattr(bot_module.SellBot, "get_keltner_upper", fake_upper)
+    monkeypatch.setattr(bot_module.SellBot, "get_volatility", fake_vol)
+    monkeypatch.setattr(bot_module.SellBot, "get_last_open_price", fake_open)
+    monkeypatch.setattr(bot_module.SellBot, "calculate_atr", fake_atr)
+
+    decision = asyncio.run(watcher.should_sell("BTCUSDT", 101.0, 102.0))
+    assert decision is True
