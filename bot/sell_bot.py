@@ -570,9 +570,7 @@ class SellBot:
                     return
                 min_qty = extract_min_qty(info)
                 if qty < min_qty:
-                    log(
-                        f"{symbol} bakiyesi {qty:.8f} minQty {min_qty:.8f} altinda"
-                    )
+                    #log(f"{symbol} bakiyesi {qty:.8f} minQty {min_qty:.8f} altinda")
                     return
 
                 trades = await self.fetch_all_trades(symbol)
@@ -613,9 +611,7 @@ class SellBot:
                 min_notional = max(extract_min_notional(info), MIN_FOLLOW_NOTIONAL)
 
                 if tracker.total_qty() < min_qty or tracker.total_qty() * last_price < min_notional:
-                    log(
-                        f"{symbol} miktar {tracker.total_qty():.8f} veya notional {tracker.total_qty() * last_price:.8f} takip sınırının altında"
-                    )
+                    #log(f"{symbol} miktar {tracker.total_qty():.8f} veya notional {tracker.total_qty() * last_price:.8f} takip sınırının altında")
                     return
 
                 self.positions[symbol] = Position(tracker, min_qty, min_notional)
@@ -748,8 +744,6 @@ class SellBot:
                 log("BTC SMA25 altinda, tum pozisyonlar satiliyor")
                 await self.sell_all_positions()
                 return
-            else:
-                log("BTC SMA25 altinda ancak stop loss devre disi")
         items = list(self.positions.items())
         if not items:
             return
@@ -992,7 +986,7 @@ class SellBot:
         if qty < step or qty < self.positions[symbol].min_qty:
             self.positions.pop(symbol, None)
             await self.restart_price_socket()
-            log(f"{symbol} bakiyesi yetersiz, takipten çıkarıldı")
+            #log(f"{symbol} bakiyesi yetersiz, takipten çıkarıldı")
             return
         try:
             order = await self.client.create_order(
