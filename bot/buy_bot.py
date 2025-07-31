@@ -528,9 +528,7 @@ class BuyBot:
                         return None
                     last_price = float(ticker["price"])
                     if qty * last_price < MIN_LOSER_USDT:
-                        log(
-                            f"{symbol} degeri {qty * last_price:.2f} USDT altinda, atlandi"
-                        )
+                        #log(f"{symbol} degeri {qty * last_price:.2f} USDT altinda, atlandi")
                         return None
                     trades = await self.fetch_all_trades(symbol)
                     if not trades:
@@ -668,7 +666,7 @@ class BuyBot:
         self._cleanup_recent_sells()
         log(f"Serbest USDT bakiyesi: {usdt_amount:.8f}")
         if usdt_amount < MIN_LOSER_USDT:
-            log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
+            #log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
             return
         while candidate:
             symbol, _ = candidate
@@ -676,14 +674,14 @@ class BuyBot:
             if not self.loss_check_enabled:
                 last = self.last_buy_times.get(symbol)
                 if last and now - last < timedelta(hours=2):
-                    log(f"{symbol} son iki saat icinde alindi, atlandi")
+                    #log(f"{symbol} son iki saat icinde alindi, atlandi")
                     if symbol in self.top_symbols:
                         self.top_symbols.remove(symbol)
                     candidate = await self.select_rsi_keltner()
                     continue
                 last_sell = self.last_sell_times.get(symbol)
                 if last_sell and now - last_sell < timedelta(hours=2):
-                    log(f"{symbol} son iki saat icinde satildi, atlandi")
+                    #log(f"{symbol} son iki saat icinde satildi, atlandi")
                     if symbol in self.top_symbols:
                         self.top_symbols.remove(symbol)
                     candidate = await self.select_rsi_keltner()
@@ -702,7 +700,7 @@ class BuyBot:
         self._cleanup_recent_sells()
         log(f"Serbest USDT bakiyesi: {usdt_amount:.8f}")
         if usdt_amount < MIN_LOSER_USDT:
-            log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
+            #log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, bekleniyor")
             return
         total_loss = sum(loss for _sym, _price, loss in candidates)
         if total_loss <= 0:
@@ -726,7 +724,7 @@ class BuyBot:
             usdt = 0.0
         log(f"Serbest USDT bakiyesi: {usdt:.8f}")
         if usdt < MIN_LOSER_USDT:
-            log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, tarama atlandi")
+            #log(f"USDT bakiyesi {MIN_LOSER_USDT} USDT altinda, tarama atlandi")
             return
         log("Sembol taramasi basladi")
         log("Zarar stratejisi kontrol ediliyor")
@@ -739,7 +737,7 @@ class BuyBot:
                 candidate = await self.select_rsi_keltner()
                 self.loss_check_enabled = False
             else:
-                log("BTC SMA25 altinda, alım yok")
+                #log("BTC SMA25 altinda, alım yok")
                 candidate = None
             await self._execute_cycle(candidate, usdt * USDT_USAGE_RATIO)
         else:
